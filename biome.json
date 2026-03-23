@@ -40,8 +40,5 @@
 		"clientKind": "git",
 		"enabled": true,
 		"useIgnoreFile": true
-	},
-	"files": {
-		"includes": ["**/*", "!.zed/*"]
 	}
 }
