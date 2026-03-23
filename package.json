@@ -1,0 +1,20 @@
+{
+	"name": "fanee",
+	"private": true,
+	"workspaces": [
+		"apps/*",
+		"packages/*"
+	],
+	"scripts": {
+		"dev": "bunx --bun turbo run dev",
+		"build": "bunx --bun turbo run build",
+		"lint": "bunx --bun turbo run lint",
+		"format": "biome format --write ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.4.8",
+		"@types/bun": "^1.3.10",
+		"turbo": "^2.8.18"
+	},
+	"packageManager": "bun@1.3.11"
+}
