@@ -1,10 +1,10 @@
 # Open Translation Bundle Specification
 
-> Version 0.2.0, Mar 23 2026
+> Version 0.3.0, Mar 23 2026
 
 ## 1. Abstract
 
-The Open Translation Bundle (OTB) defines a standardized directory structure and metadata schema for the encapsulation, distribution, and resolution of localization resources. It supports modularity through nested Modules with a build-time merge strategy, and enforces strict character encoding and key naming constraints to ensure cross-platform compatibility.
+The Open Translation Bundle (OTB) defines a standardized directory structure and metadata schema for the encapsulation, distribution, and resolution of localization resources.
 
 ## 2. Terminology and Conformance
 
@@ -21,14 +21,15 @@ The key words **MUST**, **MUST NOT**, **REQUIRED**, **SHALL**, **SHALL NOT**, **
 | **Packed Mode** | The Packed form of a Bundle: a ZIP-compressed archive using the Deflate algorithm |
 | **Unpacked Mode** | The Unpacked form of a Bundle: a standard filesystem directory tree |
 | **Root Directory** | The top-level directory of an Unpacked Bundle, or the root path within a Packed Bundle archive |
-| **Module** | A sub-directory within `messages/` containing its own `manifest.json`; Modules MUST recursively adhere to this specification |
-| **Namespace** | An identifier **derived** from the directory path under `messages/`; see Section 4.2 |
+| **Module** | A sub-directory within `modules/` containing its own `manifest.json`; Modules MUST recursively adhere to this specification |
+| **Namespace** | An identifier **derived** from the directory path under `modules/`; see Section 4.2 |
 | **Resource file** | A JSON file named with a BCP-47 tag (e.g., `en-US.json`) containing translation key-value pairs |
 | **BCP-47** | The IETF BCP-47 standard for language tags; see [RFC 5646](https://www.rfc-editor.org/rfc/rfc5646) |
 | **Message key** | A flat string identifier for a single translation entry within a Resource file; see Section 6.3 |
 | **Message value** | The translation string associated with a Message key; see Section 6.4 |
 | **Resolution context** | A configuration that specifies which Module's namespace a tool is operating within; used at Development and Runtime phases |
 | **Standalone** | A manifest field (`standalone: true`) that opt a Module out of the parent-merge behavior during the Bundle phase |
+| **Extension field** | A field with the prefix `x-` in `manifest.json`; used for tool-specific customization |
 
 ### 2.3 Phase Model
 
@@ -60,29 +61,37 @@ An OTB Bundle exists in two interchangeable formats:
 
 ## 4. Bundle Architecture and Module Hierarchy
 
+OTB's directory structure is minimal and flexible. A bundle may use only `manifest.json` and `messages/` for flat Resource files, or additionally include `modules/` for nested Module directories with Namespace derivation and parent-to-child merge.
+
+The Module hierarchy (Namespace, Resolution context, Merge) is an **optional enhancement**. Users and tools **MAY** use OTB without requiring or implementing these features.
+
 The internal hierarchy of an OTB container **MUST** be preserved across both Packed and Unpacked modes.
 
 ### 4.1 Root Directory Constraints
 
+The Root Directory **MUST** contain:
+
 1. **`manifest.json`**: **REQUIRED**. Contains the bundle's structural and identity metadata.
-2. **`messages/`**: **REQUIRED**. A directory containing all locale-specific Resource files and Modules.
+
+The Root Directory **MUST** also contain at least one of:
+
+1. **`messages/`**: **OPTIONAL**. A directory containing locale-specific Resource files.
+2. **`modules/`**: **OPTIONAL**. A directory containing Modules.
+
+Additionally, plugins and other tools **MAY** place their own directory structures at the Root Directory level for purposes beyond the core OTB specification. These directories and their contents are outside the scope of this specification.
 
 ### 4.2 Namespace Derivation
 
-Namespace is **derived from the directory path** under `messages/`. It is formed by joining directory names with a colon (`:`) from the root `messages/` downward.
+Namespace is **derived from the directory path** under `modules/`. It is formed by joining directory names with a colon (`:`) from the root `modules/` downward.
 
-| Path under `messages/` | Namespace |
-|------------------------|-----------|
-| `messages/en-US.json` | `""` (empty string — root namespace) |
-| `messages/web/` | `"web"` |
-| `messages/web/messages/billing/` | `"web:billing"` |
-| `messages/web/messages/billing/messages/confirmation/` | `"web:billing:confirmation"` |
+| Path under `modules/` | Namespace |
+|-----------------------|-----------|
+| `modules/web/` | `"web"` |
+| `modules/web/modules/billing/` | `"web:billing"` |
 
 ### 4.3 Module Definition
 
-A **Module** is any sub-directory within `messages/` that contains its own `manifest.json`. Modules **MUST** recursively adhere to this specification.
-
-A Module that does not contain a `manifest.json` is a **data directory** and is not treated as a Module. It is transparently included in the parent's namespace hierarchy.
+A **Module** is any sub-directory within `modules/` that contains its own `manifest.json`. Modules **MUST** recursively adhere to this specification.
 
 ### 4.4 Merge Algorithm
 
@@ -107,13 +116,15 @@ The `manifest.json` file **SHALL** use the following property definitions:
 | Property | Type | Requirement | Phase | Description |
 |:---------|:-----|:------------|:------|:------------|
 | `format` | String | **REQUIRED** | All | **MUST** be the literal value `"otb"`. |
-| `specVersion` | String | **REQUIRED** | All | Semantic version of this specification (e.g., `"0.2.0"`). |
+| `specVersion` | String | **REQUIRED** | All | Semantic version of this specification (e.g., `"0.3.0"`). |
 | `bundleVersion` | String | **OPTIONAL** | All | Project-specific versioning (e.g., `"1.0.4-build.22"`). |
-| `type` | String | **OPTIONAL** | All | Valid values: `"root"` (default) or `"module"`. |
 | `standalone` | Boolean | **OPTIONAL** | Bundle | If `true`, this Module's output will not inherit ancestor data during merge. Default: `false`. |
 | `sourceLocale` | String | **REQUIRED** | Development | BCP-47 tag representing the source text language. |
 | `targetLocales` | Array | **REQUIRED** | Development | List of BCP-47 tags for supported translations. |
 | `name` | String | **OPTIONAL** | Development | Human-readable identifier for the bundle. |
+| `x-*` | Any | **OPTIONAL** | All | Extension fields for tool-specific customization. Keys **MUST** begin with `x-`. Interpretation and valid values are determined by the implementer. |
+
+**Extension fields (`x-*`)**: Tools MAY use extension fields to store tool-specific data. For example, `x-plugin-name`, `x-tool-config`, etc. A tool operating in a phase **SHOULD** preserve extension fields it does not understand. A tool **MAY** define its own schema for extension fields.
 
 ## 6. Data Formatting and Integrity
 
@@ -146,9 +157,9 @@ Message values **MUST** be valid [Unicode MessageFormat 2.0](https://www.unicode
 
 * A Bundle tool **MUST** fail with a clear error if a `manifest.json` cannot be parsed as valid JSON.
 * A Bundle tool **MUST** fail if a **required** field is missing or has an incorrect type.
-* A Bundle tool **SHOULD** warn when a Module's declared `targetLocales` are not a subset of its parent's `targetLocales` (if the parent is also present in the same bundle).
 * A Bundle tool **SHOULD** warn on duplicate Message keys across Modules that share the same Namespace.
 * A Bundle tool **MUST NOT** fail on unknown optional fields; it **SHOULD** ignore them.
+* A Bundle tool **MUST NOT** fail on unknown extension fields (`x-*`); it **SHOULD** preserve them in output if passing through OTB format.
 
 ### 7.3 Runtime Phase
 
@@ -156,3 +167,13 @@ Message values **MUST** be valid [Unicode MessageFormat 2.0](https://www.unicode
 * A Runtime tool **MUST** resolve Message keys against the currently configured Resolution context, returning the corresponding Message value.
 * If a Message key is not found in the current context, the Runtime tool **MAY** return an implementation-defined fallback value and **MAY** emit a warning.
 * A Runtime tool **MUST NOT** require or interpret `sourceLocale`, `targetLocales`, or any field marked as Development-phase only in Section 5.
+
+## 8. Extension and Tool-Specific Directories
+
+Plugins and external tools **MAY** create directories at the Root Directory level for their own purposes. Tool-specific directories **MUST** begin with `x-` (e.g., `x-mytool/`, `x-plugin-name/`). Examples include but are not limited to:
+
+* Plugin configuration directories
+* Tool-specific assets or resources
+* Build artifacts
+
+These directories **MUST NOT** conflict with the reserved paths `manifest.json`, `messages/`, and `modules/`. The interpretation and structure of tool-specific directories are outside the scope of this specification.
