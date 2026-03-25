@@ -11,62 +11,66 @@ npm install @fanee/runtime-node
 ## Usage
 
 ```typescript
-import { createRuntime, createTranslator } from "@fanee/runtime-node";
+import { FaneeRuntime } from "@fanee/runtime-node";
+```
+
+## Initialize
+
+```typescript
+const runtime = new FaneeRuntime({
+	bundlePath: "/path/to/bundle",
+	defaultLocale: "en",
+	namespace: "web"  // optional base namespace
+});
+
+await runtime.load();
 ```
 
 ## API
 
-Currently this library only support unpacked OTB bundle.
+Currently this library only supports unpacked OTB bundle.
 
-### createRuntime(rootPath, options)
+### `runtime.t(context?)`
 
-Creates an OTB runtime instance from a bundle's root directory.
+Returns a translation function. The `context.namespace` is appended to the base namespace from constructor.
 
 ```typescript
-const runtime = await createRuntime("/path/to/bundle", {
-  defaultLocale: "en"
-});
+// Constructor: namespace = "web"
+
+// Base namespace
+runtime.t()("key");  // looks up "web"
+
+// Append namespace
+runtime.t({ namespace: "auth" })("key");  // looks up "web:auth"
+
+// Set locale
+runtime.t({ locale: "fr" })("key");  // looks up "web" with locale "fr"
+runtime.t({ namespace: "auth", locale: "fr" })("key");  // looks up "web:auth" with locale "fr"
 ```
 
-#### Options
+### `runtime.tAll(key, vars?)`
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `defaultLocale` | `string` | Default locale (required) |
-
-#### Methods
-
-**`runtime.t()`** — Returns a translation function for the current context.
-
-**`runtime.setContext(context)`** — Sets the resolution context.
+Returns translations for a key in all available locales (uses base namespace).
 
 ```typescript
-runtime.setContext({ namespace: "web" });           // Set namespace
-runtime.setContext({ namespace: "web:billing" });    // Nested namespace
-runtime.setContext({ locale: "fr-FR" });             // Set locale
-runtime.setContext({ namespace: "", locale: "fr" }); // Clear namespace, set locale
+runtime.tAll("greeting");
+// { en: "Hello", fr: "Bonjour", de: "Hallo" }
+
+runtime.tAll("items", { count: 5 });
+// { en: "5 items", fr: "5 éléments", de: "5 Artikel" }
 ```
 
-**`runtime.setLocale(locale)`** — Changes the current locale.
+### `runtime.getLocales()`
 
-**`runtime.getLocales()`** — Returns all available locales in the project.
-
-### createTranslator(runtime, options)
-
-Factory function to create isolated translator functions.
+Returns all available locales.
 
 ```typescript
-const translate = createTranslator(runtime, {
-  namespace: "",
-  locale: "en"
-});
-
-translate("greeting"); // "Hello"
+runtime.getLocales();  // ["de", "en", "fr"]
 ```
 
 ## Translation Function
 
-The translation function (`t()`) supports MF2 MessageFormat with variable interpolation:
+The translation function supports MF2 MessageFormat with variable interpolation:
 
 ```typescript
 const t = runtime.t();
@@ -100,14 +104,13 @@ When a key is missing in the current locale, the runtime falls back to the defau
 // messages/en.json: { "greeting": "Hello" }
 // messages/fr.json: {}
 
-runtime.setContext({ namespace: "", locale: "fr" });
-t("greeting"); // "Hello" (fallback to default locale)
+runtime.t({ locale: "fr" })("greeting"); // "Hello" (fallback to default locale)
 ```
 
 If the key is missing in both, the key itself is returned:
 
 ```typescript
-t("nonexistent"); // "nonexistent"
+runtime.t()("nonexistent"); // "nonexistent"
 ```
 
 ## License

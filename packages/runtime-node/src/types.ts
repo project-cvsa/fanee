@@ -1,42 +1,35 @@
+export type Locale = string;
+export type Namespace = string;
+export type MessageKey = string;
+
+export type LocaleMessages = Record<MessageKey, string>;
+
+export type NamespaceResources = Record<Locale, LocaleMessages>;
+
+export type BundleResources = Record<Namespace, NamespaceResources>;
+
+export interface FaneeConfig {
+	bundlePath: string;
+	defaultLocale: Locale;
+	namespace?: Namespace;
+}
+
+export interface TranslateContext {
+	namespace?: Namespace;
+	locale?: Locale;
+}
+
+export type TranslateFunction = (key: MessageKey, vars?: Record<string, unknown>) => string;
+
+export type TranslationsByLocale = Record<Locale, string>;
+
 export interface OTBManifest {
 	format: "otb";
 	specVersion: string;
 	bundleVersion?: string;
 	standalone?: boolean;
 	sourceLocale?: string;
-	targetLocales?: string[];
+	targetLocales?: Locale[];
 	name?: string;
 	[key: `x-${string}`]: unknown;
 }
-
-export interface ResourceFile {
-	[key: string]: string;
-}
-
-export interface RuntimeConfig {
-	defaultLocale?: string;
-}
-
-export interface ResolutionContext {
-	namespace: string;
-	locale?: string;
-}
-
-export type TranslationFunction = (key: string, vars?: Record<string, unknown>) => string;
-
-export interface Runtime {
-	setContext(context: ResolutionContext): void;
-	getContext(): ResolutionContext;
-	t(locale?: string): TranslationFunction;
-	setLocale(locale: string): void;
-	getLocales(): string[];
-}
-
-export interface ModuleInfo {
-	path: string;
-	namespace: string;
-	manifest: OTBManifest;
-	standalone: boolean;
-}
-
-export type ResourceData = Record<string, Record<string, string>>;

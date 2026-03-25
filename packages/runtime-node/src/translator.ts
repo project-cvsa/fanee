@@ -1,22 +1,28 @@
 import { MessageFormat } from "messageformat";
 import { DraftFunctions } from "messageformat/functions";
-import type { TranslationFunction, ResourceData, ResolutionContext, RuntimeConfig } from "./types";
+import type { NamespaceResources, Locale } from "./types";
 
 const messageCache = new Map<string, Map<string, MessageFormat<string, string>>>();
 
-function getOrCreateMessageFormat(locale: string, key: string, value: string): MessageFormat<string, string> {
+export function getOrCreateMessageFormat(
+	locale: string,
+	key: string,
+	value: string
+): MessageFormat<string, string> {
 	let localeCache = messageCache.get(locale);
 	if (!localeCache) {
 		localeCache = new Map();
 		messageCache.set(locale, localeCache);
 	}
 
-	let mf: MessageFormat<string, string> | undefined = localeCache.get(key);
+	let mf = localeCache.get(key);
 	if (!mf) {
 		try {
 			mf = new MessageFormat([locale], value, { functions: DraftFunctions });
 		} catch (error) {
-			console.warn(`[server-unpack] Failed to parse message for key "${key}" in locale "${locale}": ${error}`);
+			console.warn(
+				`[fanee] Failed to parse message for key "${key}" in locale "${locale}": ${error}`
+			);
 			mf = new MessageFormat([locale], value, { functions: DraftFunctions });
 		}
 		localeCache.set(key, mf);
@@ -25,34 +31,28 @@ function getOrCreateMessageFormat(locale: string, key: string, value: string): M
 }
 
 export function createTranslationFunction(
-	resources: ResourceData | undefined,
-	context: ResolutionContext,
-	config: RuntimeConfig,
-): TranslationFunction {
+	resources: NamespaceResources | undefined,
+	locale: Locale,
+	defaultLocale: Locale
+): (key: string, vars?: Record<string, unknown>) => string {
 	return (key: string, vars?: Record<string, unknown>): string => {
-		const locale = context.locale ?? config.defaultLocale ?? "en";
-
 		if (!resources) {
-			console.warn(`[server-unpack] No resources found for namespace: ${context.namespace}`);
+			console.warn(`[fanee] No resources found`);
 			return key;
 		}
 
 		let localeData = resources[locale];
 
 		if (!localeData) {
-			const defaultLocale = config.defaultLocale ?? "en";
 			localeData = resources[defaultLocale];
-
 			if (!localeData) {
-				console.warn(`[server-unpack] Locale not found: ${locale} (default: ${defaultLocale})`);
 				return key;
 			}
 		}
 
 		const value = localeData[key];
-
 		if (value === undefined) {
-			console.warn(`[server-unpack] Key not found: ${key} in locale: ${locale}`);
+			console.warn(`[fanee] Key not found: ${key} in locale: ${locale}`);
 			return key;
 		}
 
@@ -64,7 +64,7 @@ export function createTranslationFunction(
 		try {
 			return mf.format(vars);
 		} catch (error) {
-			console.warn(`[server-unpack] Failed to format message for key "${key}": ${error}`);
+			console.warn(`[fanee] Failed to format message for key "${key}": ${error}`);
 			return value;
 		}
 	};

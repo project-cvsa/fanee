@@ -1,96 +1,171 @@
 import { join } from "node:path";
+import { readdir, stat, readFile } from "node:fs/promises";
 import type {
-	Runtime,
-	RuntimeConfig,
-	ResolutionContext,
-	ModuleInfo,
-	ResourceData,
-	TranslationFunction,
+	Locale,
+	Namespace,
+	MessageKey,
+	TranslateContext,
+	TranslateFunction,
+	TranslationsByLocale,
+	BundleResources,
+	FaneeConfig,
 } from "./types";
-import { loadManifest, scanModules } from "./scanner";
-import { mergeResourcesForNamespace } from "./merger";
+import { loadManifest, loadMessagesDir } from "./scanner";
 import { createTranslationFunction } from "./translator";
 
-export async function createRuntime(bundlePath: string, config?: RuntimeConfig): Promise<Runtime> {
-	const state = {
-		bundlePath,
-		config: config ?? {},
-		currentContext: {
-			namespace: "",
-			locale: config?.defaultLocale ?? "en",
-		} as ResolutionContext,
-		modules: new Map<string, ModuleInfo>(),
-		resourceData: new Map<string, ResourceData>(),
-	};
+class FaneeRuntime {
+	private readonly bundlePath: string;
+	private readonly defaultLocale: Locale;
+	private readonly baseNamespace: Namespace;
+	private readonly modules: Map<Namespace, { path: string; standalone: boolean }>;
+	private readonly resources: BundleResources;
+	private locale: Locale;
 
-	async function loadResourcesForNamespace(namespace: string): Promise<void> {
-		if (state.resourceData.has(namespace)) return;
-
-		const merged = await mergeResourcesForNamespace(
-			namespace,
-			bundlePath,
-			state.modules,
-		);
-		state.resourceData.set(namespace, merged);
+	constructor(config: FaneeConfig) {
+		this.bundlePath = config.bundlePath;
+		this.defaultLocale = config.defaultLocale;
+		this.baseNamespace = config.namespace ?? "";
+		this.modules = new Map();
+		this.resources = {};
+		this.locale = config.defaultLocale;
 	}
 
-	async function initialize(): Promise<void> {
-		const rootManifest = await loadManifest(bundlePath);
+	async load(): Promise<void> {
+		const rootManifest = await loadManifest(this.bundlePath);
 
-		state.modules.set("", {
-			path: bundlePath,
-			namespace: "",
-			manifest: rootManifest,
+		this.modules.set("", {
+			path: this.bundlePath,
 			standalone: rootManifest.standalone ?? false,
 		});
 
-		const modulesDir = join(bundlePath, "modules");
-		await scanModules(modulesDir, "", state.modules);
+		const modulesDir = join(this.bundlePath, "modules");
+		await this.scanModules(modulesDir, "");
 
-		for (const namespace of state.modules.keys()) {
-			await loadResourcesForNamespace(namespace);
+		await this.loadAllResources();
+	}
+
+	private async scanModules(modulesDir: string, parentNamespace: Namespace): Promise<void> {
+		let entries: string[];
+		try {
+			entries = await readdir(modulesDir);
+		} catch {
+			return;
+		}
+
+		for (const entry of entries) {
+			const fullPath = join(modulesDir, entry);
+			const entryStat = await stat(fullPath);
+
+			if (!entryStat.isDirectory()) continue;
+
+			const manifestPath = join(fullPath, "manifest.json");
+			let manifest: { standalone?: boolean } | null = null;
+
+			try {
+				const content = await readFile(manifestPath, "utf-8");
+				manifest = JSON.parse(content);
+			} catch {
+				await this.scanModules(fullPath, parentNamespace);
+				continue;
+			}
+
+			const namespace: Namespace = parentNamespace
+				? (`${parentNamespace}:${entry}` as Namespace)
+				: (entry as Namespace);
+
+			this.modules.set(namespace, {
+				path: fullPath,
+				standalone: manifest?.standalone ?? false,
+			});
+
+			await this.scanModules(fullPath, namespace);
 		}
 	}
 
-	function setContext(context: ResolutionContext): void {
-		state.currentContext = {
-			namespace: context.namespace,
-			locale: context.locale ?? state.config.defaultLocale ?? "en",
-		};
-	}
+	private async loadAllResources(): Promise<void> {
+		const rootMessagesDir = join(this.bundlePath, "messages");
+		this.resources[""] = {};
+		await loadMessagesDir(rootMessagesDir, this.resources[""]);
 
-	function getContext(): ResolutionContext {
-		return { ...state.currentContext };
-	}
+		for (const [namespace, mod] of this.modules) {
+			if (namespace === "") continue;
 
-	function t(locale?: string): TranslationFunction {
-		const resources = state.resourceData.get(state.currentContext.namespace);
-		if (locale) state.currentContext.locale = locale;
-		return createTranslationFunction(resources, state.currentContext, state.config);
-	}
+			const parts = namespace.split(":");
+			let hitStandalone = false;
+			const merged: Record<string, Record<string, string>> = {};
 
-	function setLocale(locale: string): void {
-		state.currentContext.locale = locale;
-	}
+			await loadMessagesDir(rootMessagesDir, merged);
 
-	function getLocales(): string[] {
-		const allLocales = new Set<string>();
-		for (const resources of state.resourceData.values()) {
-			for (const locale of Object.keys(resources)) {
-				allLocales.add(locale);
+			for (const part of parts) {
+				const segmentNs = parts.slice(0, parts.indexOf(part) + 1).join(":") as Namespace;
+				const modInfo = this.modules.get(segmentNs);
+
+				if (modInfo) {
+					if (modInfo.standalone) {
+						hitStandalone = true;
+					}
+					if (!hitStandalone) {
+						const messagesDir = join(modInfo.path, "messages");
+						await loadMessagesDir(messagesDir, merged);
+					}
+				}
+			}
+
+			if (mod.standalone) {
+				const newMerged: Record<string, Record<string, string>> = {};
+				const messagesDir = join(mod.path, "messages");
+				await loadMessagesDir(messagesDir, newMerged);
+				this.resources[namespace] = newMerged;
+			} else {
+				this.resources[namespace] = merged;
 			}
 		}
-
-		return Array.from(allLocales).sort();
 	}
 
-	await initialize();
+	t(context?: Partial<TranslateContext>): TranslateFunction {
+		const locale = context?.locale ?? this.locale;
 
-	return {
-		setContext,
-		getContext,
-		t,
-		setLocale,
-		getLocales,
-	};
+		const ns =
+			context?.namespace !== undefined
+				? this.baseNamespace
+					? `${this.baseNamespace}:${context.namespace}`
+					: context.namespace
+				: this.baseNamespace;
+
+		const resources = this.resources[ns];
+		if (!resources) {
+			return (k: MessageKey) => k;
+		}
+
+		return createTranslationFunction(resources, locale, this.defaultLocale);
+	}
+
+	tAll(key: MessageKey, vars?: Record<string, unknown>): TranslationsByLocale {
+		const resources = this.resources[this.baseNamespace];
+		const result: TranslationsByLocale = {};
+
+		if (!resources) {
+			return result;
+		}
+
+		const locales = Object.keys(resources);
+		for (const loc of locales) {
+			const t = createTranslationFunction(resources, loc as Locale, this.defaultLocale);
+			result[loc as Locale] = t(key, vars);
+		}
+
+		return result;
+	}
+
+	getLocales(): Locale[] {
+		const locales = new Set<Locale>();
+		for (const resource of Object.values(this.resources)) {
+			for (const locale of Object.keys(resource)) {
+				locales.add(locale as Locale);
+			}
+		}
+		return Array.from(locales).sort();
+	}
 }
+
+export { FaneeRuntime };

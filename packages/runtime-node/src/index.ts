@@ -1,13 +1,12 @@
 export type {
+	Locale,
+	Namespace,
+	MessageKey,
+	FaneeConfig,
+	TranslateContext,
+	TranslateFunction,
+	TranslationsByLocale,
 	OTBManifest,
-	ResourceFile,
-	RuntimeConfig,
-	ResolutionContext,
-	TranslationFunction,
-	Runtime,
-	ModuleInfo,
-	ResourceData,
 } from "./types";
 
-export { createRuntime } from "./runtime";
-export { createTranslator } from "./translator-factory";
+export { FaneeRuntime } from "./runtime";
