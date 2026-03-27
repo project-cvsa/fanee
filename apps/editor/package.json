@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite --port 22300",
-		"build": "tsc -b && vite build",
+		"build": "tsgo -b && vite build",
 		"preview": "vite preview",
 		"lint": "bunx --bun biome lint"
 	},

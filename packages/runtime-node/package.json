@@ -11,11 +11,11 @@
 		"url": "https://github.com/project-cvsa/fanee"
 	},
 	"scripts": {
-		"build": "bunx --bun tsc -p tsconfig.build.json",
+		"build": "bunx --bun tsgo -p tsconfig.build.json",
 		"lint": "bunx --bun biome lint",
 		"test": "bun test",
 		"test:coverage": "bun test --coverage",
-		"typecheck": "bunx --bun tsc --noEmit"
+		"typecheck": "bunx --bun tsgo --noEmit"
 	},
 	"devDependencies": {
 		"@types/bun": "latest"
