@@ -68,6 +68,29 @@ Returns all available locales.
 runtime.getLocales();  // ["de", "en", "fr"]
 ```
 
+### `runtime.getAllTranslations()`
+
+Returns all loaded translations across all namespaces and locales.
+
+```typescript
+const all = runtime.getAllTranslations();
+// { web: { en: { greeting: "Hello" }, fr: { greeting: "Bonjour" } }, "web:auth": { ... } }
+```
+
+### `runtime.getTranslationsForNamespace(ns)`
+
+Returns translations for a specific namespace, or `undefined` if not found.
+
+```typescript
+const webTranslations = runtime.getTranslationsForNamespace("web");
+// { en: { greeting: "Hello" }, fr: { greeting: "Bonjour" } }
+
+const authTranslations = runtime.getTranslationsForNamespace("web:auth");
+// { en: { login: "Login" }, fr: { login: "Connexion" } }
+
+runtime.getTranslationsForNamespace("nonexistent"); // undefined
+```
+
 ## Translation Function
 
 The translation function supports MF2 MessageFormat with variable interpolation:

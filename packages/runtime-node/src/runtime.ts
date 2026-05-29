@@ -9,6 +9,7 @@ import type {
 	TranslationsByLocale,
 	BundleResources,
 	FaneeConfig,
+	NamespaceResources,
 } from "./types";
 import { loadManifest, loadMessagesDir } from "./scanner";
 import { createTranslationFunction } from "./translator";
@@ -42,6 +43,14 @@ class FaneeRuntime {
 		await this.scanModules(modulesDir, "");
 
 		await this.loadAllResources();
+	}
+
+	getAllTranslations() {
+		return this.resources;
+	}
+
+	getTranslationsForNamespace(ns: Namespace): NamespaceResources | undefined {
+		return this.resources[ns];
 	}
 
 	private async scanModules(modulesDir: string, parentNamespace: Namespace): Promise<void> {

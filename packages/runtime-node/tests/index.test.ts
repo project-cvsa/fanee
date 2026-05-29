@@ -86,6 +86,10 @@ describe("OTB Runtime", () => {
 		expect(billingT("rootKey")).toBe("root value");
 		expect(billingT("webKey")).toBe("web value");
 		expect(billingT("billingKey")).toBe("billing value");
+
+		const billingTranslations = runtime.getTranslationsForNamespace("web:billing");
+		expect(billingTranslations).toBeDefined();
+		expect(billingTranslations?.en?.rootKey).toBe("root value");
 	});
 
 	test("loads BCP-47 named resource files", async () => {
