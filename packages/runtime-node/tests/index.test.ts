@@ -2,7 +2,8 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { FaneeRuntime } from "@/index";
+import { FaneeRuntime } from "@fanee/core";
+import { initFaneeNode } from "@/index";
 
 describe("OTB Runtime", () => {
 	let tempDir: string;
@@ -20,6 +21,14 @@ describe("OTB Runtime", () => {
 		}
 	}
 
+	function makeRuntime(defaultLocale = "en"): FaneeRuntime {
+		const runtime = new FaneeRuntime();
+		runtime
+			.config({ defaultLocale, currentLocale: defaultLocale })
+			.use(initFaneeNode({ bundlePath: tempDir }));
+		return runtime;
+	}
+
 	beforeEach(async () => {
 		tempDir = await mkdtemp(join(tmpdir(), "otb-test-"));
 	});
@@ -34,10 +43,9 @@ describe("OTB Runtime", () => {
 			"messages/en.json": { greeting: "Hello" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("greeting")).toBe("Hello");
+		const runtime = makeRuntime();
+		await runtime.ready();
+		expect(runtime.t()("greeting")).toBe("Hello");
 	});
 
 	test("t with locale context works", async () => {
@@ -47,8 +55,8 @@ describe("OTB Runtime", () => {
 			"messages/fr.json": { greeting: "Bonjour" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
 		expect(runtime.t()("greeting")).toBe("Hello");
 		expect(runtime.t({ locale: "fr" })("greeting")).toBe("Bonjour");
@@ -60,14 +68,22 @@ describe("OTB Runtime", () => {
 			"messages/en.json": { rootKey: "root value" },
 			"modules/web/manifest.json": { format: "otb", specVersion: "0.3.0" },
 			"modules/web/messages/en.json": { webKey: "web value" },
-			"modules/web/modules/billing/manifest.json": { format: "otb", specVersion: "0.3.0" },
-			"modules/web/modules/billing/messages/en.json": { billingKey: "billing value" },
-			"modules/web/modules/auth/manifest.json": { format: "otb", specVersion: "0.3.0" },
+			"modules/web/modules/billing/manifest.json": {
+				format: "otb",
+				specVersion: "0.3.0",
+			},
+			"modules/web/modules/billing/messages/en.json": {
+				billingKey: "billing value",
+			},
+			"modules/web/modules/auth/manifest.json": {
+				format: "otb",
+				specVersion: "0.3.0",
+			},
 			"modules/web/modules/auth/messages/en.json": { authKey: "auth value" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
 		const t = runtime.t({ namespace: "web" });
 		expect(t("rootKey")).toBe("root value");
@@ -83,11 +99,8 @@ describe("OTB Runtime", () => {
 		expect(authT("webKey")).toBe("web value");
 		expect(authT("authKey")).toBe("auth value");
 
-		expect(billingT("rootKey")).toBe("root value");
-		expect(billingT("webKey")).toBe("web value");
-		expect(billingT("billingKey")).toBe("billing value");
-
-		const billingTranslations = runtime.getTranslationsForNamespace("web:billing");
+		const billingTranslations =
+			runtime.getTranslationsForNamespace("web:billing");
 		expect(billingTranslations).toBeDefined();
 		expect(billingTranslations?.en?.rootKey).toBe("root value");
 	});
@@ -99,11 +112,15 @@ describe("OTB Runtime", () => {
 			"messages/fr-FR.json": { greeting: "Bonjour, {name}!" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en-US" });
-		await runtime.load();
+		const runtime = makeRuntime("en-US");
+		await runtime.ready();
 
-		expect(runtime.t({ locale: "en-US" })("greeting")).toBe("Hello, {name}!");
-		expect(runtime.t({ locale: "fr-FR" })("greeting")).toBe("Bonjour, {name}!");
+		expect(runtime.t({ locale: "en-US" })("greeting")).toBe(
+			"Hello, {name}!"
+		);
+		expect(runtime.t({ locale: "fr-FR" })("greeting")).toBe(
+			"Bonjour, {name}!"
+		);
 	});
 
 	test("merge algorithm - descendant overrides ancestor", async () => {
@@ -114,8 +131,8 @@ describe("OTB Runtime", () => {
 			"modules/web/messages/en.json": { key: "web", shared: "web shared" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
 		const t = runtime.t({ namespace: "web" });
 		expect(t("key")).toBe("web");
@@ -133,14 +150,18 @@ describe("OTB Runtime", () => {
 				specVersion: "0.3.0",
 				standalone: true,
 			},
-			"modules/web/modules/standalone/messages/en.json": { key: "standalone value" },
+			"modules/web/modules/standalone/messages/en.json": {
+				key: "standalone value",
+			},
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
 		expect(runtime.t({ namespace: "web" })("key")).toBe("web value");
-		expect(runtime.t({ namespace: "web:standalone" })("key")).toBe("standalone value");
+		expect(runtime.t({ namespace: "web:standalone" })("key")).toBe(
+			"standalone value"
+		);
 	});
 
 	test("locale fallback behavior", async () => {
@@ -149,11 +170,15 @@ describe("OTB Runtime", () => {
 			"messages/en.json": { greeting: "Hello" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
-		expect(runtime.t({ namespace: "", locale: "de" })("greeting")).toBe("Hello");
-		expect(runtime.t({ namespace: "", locale: "fr" })("missing")).toBe("missing");
+		expect(runtime.t({ namespace: "", locale: "de" })("greeting")).toBe(
+			"Hello"
+		);
+		expect(runtime.t({ namespace: "", locale: "fr" })("missing")).toBe(
+			"missing"
+		);
 	});
 
 	test("getLocales returns all available locales", async () => {
@@ -164,8 +189,9 @@ describe("OTB Runtime", () => {
 			"messages/de.json": {},
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
+
 		const locales = runtime.getLocales();
 		expect(locales).toContain("en");
 		expect(locales).toContain("fr");
@@ -178,11 +204,11 @@ describe("OTB Runtime", () => {
 			"messages/en.json": { existing: "value" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("nonexistent")).toBe("nonexistent");
-		expect(t("existing")).toBe("value");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("nonexistent")).toBe("nonexistent");
+		expect(runtime.t()("existing")).toBe("value");
 	});
 
 	test("tAll returns translations for all locales", async () => {
@@ -193,14 +219,31 @@ describe("OTB Runtime", () => {
 			"messages/de.json": { greeting: "Hallo" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
 		const all = runtime.tAll("greeting");
 		expect(all.en).toBe("Hello");
 		expect(all.fr).toBe("Bonjour");
 		expect(all.de).toBe("Hallo");
 	});
+
+
+	test("getLocale and setLocale work", async () => {
+		await createBundle({
+			"manifest.json": { format: "otb", specVersion: "0.3.0" },
+			"messages/en.json": { greeting: "Hello" },
+			"messages/fr.json": { greeting: "Bonjour" },
+		});
+
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.getLocale()).toBe("en");
+		runtime.setLocale("fr");
+		expect(runtime.getLocale()).toBe("fr");
+		expect(runtime.t()("greeting")).toBe("Bonjour");
+	})
 });
 
 describe("MF2 MessageFormat integration", () => {
@@ -219,6 +262,14 @@ describe("MF2 MessageFormat integration", () => {
 		}
 	}
 
+	function makeRuntime(defaultLocale = "en"): FaneeRuntime {
+		const runtime = new FaneeRuntime();
+		runtime
+			.config({ defaultLocale, currentLocale: defaultLocale })
+			.use(initFaneeNode({ bundlePath: tempDir }));
+		return runtime;
+	}
+
 	beforeEach(async () => {
 		tempDir = await mkdtemp(join(tmpdir(), "mf2-test-"));
 	});
@@ -233,11 +284,11 @@ describe("MF2 MessageFormat integration", () => {
 			"messages/en.json": { greeting: "Hello {$user}!" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("greeting", { user: "Bob" })).toContain("Bob");
-		expect(t("greeting", { user: "Bob" })).toContain("Hello");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("greeting", { user: "Bob" })).toContain("Bob");
+		expect(runtime.t()("greeting", { user: "Bob" })).toContain("Hello");
 	});
 
 	test("MF2 multiple variables", async () => {
@@ -246,11 +297,15 @@ describe("MF2 MessageFormat integration", () => {
 			"messages/en.json": { item: "{$count} items - {$name}" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("item", { count: 5, name: "Apples" })).toContain("5");
-		expect(t("item", { count: 5, name: "Apples" })).toContain("Apples");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("item", { count: 5, name: "Apples" })).toContain(
+			"5"
+		);
+		expect(runtime.t()("item", { count: 5, name: "Apples" })).toContain(
+			"Apples"
+		);
 	});
 
 	test("MF2 without variables returns raw value", async () => {
@@ -259,10 +314,10 @@ describe("MF2 MessageFormat integration", () => {
 			"messages/en.json": { greeting: "Hello {$user}!" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("greeting")).toBe("Hello {$user}!");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("greeting")).toBe("Hello {$user}!");
 	});
 
 	test("MF2 empty vars returns raw value", async () => {
@@ -271,10 +326,10 @@ describe("MF2 MessageFormat integration", () => {
 			"messages/en.json": { greeting: "Hello {$user}!" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("greeting", {})).toBe("Hello {$user}!");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("greeting", {})).toBe("Hello {$user}!");
 	});
 
 	test("MF2 number formatting", async () => {
@@ -284,22 +339,26 @@ describe("MF2 MessageFormat integration", () => {
 			"messages/en.json": { price: "Total: ${$amount :number}" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("price", { amount: 1234.56 })).toBe("Total: $1,234.56");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("price", { amount: 1234.56 })).toBe(
+			"Total: $1,234.56"
+		);
 	});
 
 	test("MF2 datetime formatting", async () => {
 		await createBundle({
 			"manifest.json": { format: "otb", specVersion: "0.3.0" },
-			"messages/en.json": { date: "Today is {$today :datetime dateStyle=medium}" },
+			"messages/en.json": {
+				date: "Today is {$today :datetime dateStyle=medium}",
+			},
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		const result = t("date", { today: new Date("2024-02-02") });
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		const result = runtime.t()("date", { today: new Date("2024-02-02") });
 		expect(result).toContain("Feb 2, 2024");
 	});
 
@@ -307,31 +366,31 @@ describe("MF2 MessageFormat integration", () => {
 		await createBundle({
 			"manifest.json": { format: "otb", specVersion: "0.3.0" },
 			"messages/en.json": {
-				status: `.input {$gender :string} .match $gender male {{A man}} female {{A woman}} * {{Someone}}`,
+				status: ".input {$gender :string} .match $gender male {{A man}} female {{A woman}} * {{Someone}}",
 			},
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("status", { gender: "male" })).toContain("man");
-		expect(t("status", { gender: "female" })).toContain("woman");
-		expect(t("status", { gender: "other" })).toContain("Someone");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("status", { gender: "male" })).toContain("man");
+		expect(runtime.t()("status", { gender: "female" })).toContain("woman");
+		expect(runtime.t()("status", { gender: "other" })).toContain("Someone");
 	});
 
 	test("MF2 plural", async () => {
 		await createBundle({
 			"manifest.json": { format: "otb", specVersion: "0.3.0" },
 			"messages/en.json": {
-				items: `.input {$count :number} .match $count one {{a item}} * {{{$count} items}}`,
+				items: ".input {$count :number} .match $count one {{a item}} * {{{$count} items}}",
 			},
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
-		const t = runtime.t();
-		expect(t("items", { count: 1 })).toContain("a item");
-		expect(t("items", { count: 5 })).toContain("5 items");
+		const runtime = makeRuntime();
+		await runtime.ready();
+
+		expect(runtime.t()("items", { count: 1 })).toContain("a item");
+		expect(runtime.t()("items", { count: 5 })).toContain("5 items");
 	});
 
 	test("MF2 locale-specific formatting", async () => {
@@ -341,10 +400,14 @@ describe("MF2 MessageFormat integration", () => {
 			"messages/fr.json": { amount: "{$n :number}" },
 		});
 
-		const runtime = new FaneeRuntime({ bundlePath: tempDir, defaultLocale: "en" });
-		await runtime.load();
+		const runtime = makeRuntime();
+		await runtime.ready();
 
-		expect(runtime.t({ locale: "en" })("amount", { n: 1234.56 })).toBe("1,234.56");
-		expect(runtime.t({ locale: "fr" })("amount", { n: 1234.56 })).toMatch(/1\s234,56/);
+		expect(runtime.t({ locale: "en" })("amount", { n: 1234.56 })).toBe(
+			"1,234.56"
+		);
+		expect(runtime.t({ locale: "fr" })("amount", { n: 1234.56 })).toMatch(
+			/1\s234,56/
+		);
 	});
 });

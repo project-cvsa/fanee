@@ -1,94 +1,121 @@
 # @fanee/runtime-node
 
-OTB (Open Translation Bundle) runtime for Node.js.
+OTB (Open Translation Bundle) filesystem provider for Node.js.
+
+This package provides `initFaneeNode`, a plugin that scans an OTB bundle directory on disk and loads its translations into a `FaneeRuntime` instance from `@fanee/core`.
 
 ## Installation
 
 ```bash
-npm install @fanee/runtime-node
+npm install @fanee/core @fanee/runtime-node
 ```
 
-## Usage
+## Quick Start
 
 ```typescript
-import { FaneeRuntime } from "@fanee/runtime-node";
-```
+import { i18n } from "@fanee/core";
+import { initFaneeNode } from "@fanee/runtime-node";
 
-## Initialize
+i18n
+	.config({ defaultLocale: "en", currentLocale: "en" })
+	.use(initFaneeNode({ bundlePath: "/path/to/bundle" }));
 
-```typescript
-const runtime = new FaneeRuntime({
-	bundlePath: "/path/to/bundle",
-	defaultLocale: "en",
-	namespace: "web"  // optional base namespace
-});
+await i18n.ready();
 
-await runtime.load();
+const t = i18n.t();
+
+t("greeting");
 ```
 
 ## API
 
-Currently this library only supports unpacked OTB bundle.
-
-### `runtime.t(context?)`
-
-Returns a translation function. The `context.namespace` is appended to the base namespace from constructor.
+### `initFaneeNode(config)`
 
 ```typescript
-// Constructor: namespace = "web"
-
-// Base namespace
-runtime.t()("key");  // looks up "web"
-
-// Append namespace
-runtime.t({ namespace: "auth" })("key");  // looks up "web:auth"
-
-// Set locale
-runtime.t({ locale: "fr" })("key");  // looks up "web" with locale "fr"
-runtime.t({ namespace: "auth", locale: "fr" })("key");  // looks up "web:auth" with locale "fr"
+function initFaneeNode(config: {
+	bundlePath: string;
+}): (state: FaneeState) => Promise<FaneeState>;
 ```
 
-### `runtime.tAll(key, vars?)`
+Returns a state transformer function. When passed to `FaneeRuntime.use()`, it scans the OTB directory at `bundlePath`, discovers all modules and their message files, and merges the result into the runtime state.
+
+### Translation Methods
+
+All translation methods live on the `FaneeRuntime` instance from `@fanee/core`.
+
+#### `t(context?)`
+
+Returns a translation function. The `context.namespace` appends to the base namespace from `.config()`.
+
+```typescript
+// Config: baseNamespace = "web"
+
+i18n.t()("key");                          // looks up "web"
+
+i18n.t({ namespace: "auth" })("key");     // looks up "web:auth"
+
+i18n.t({ locale: "fr" })("key");          // looks up "web" with locale "fr"
+i18n.t({ namespace: "auth", locale: "fr" })("key");  // looks up "web:auth" with locale "fr"
+```
+
+#### `tAll(key, vars?)`
 
 Returns translations for a key in all available locales (uses base namespace).
 
 ```typescript
-runtime.tAll("greeting");
+i18n.tAll("greeting");
 // { en: "Hello", fr: "Bonjour", de: "Hallo" }
 
-runtime.tAll("items", { count: 5 });
+i18n.tAll("items", { count: 5 });
 // { en: "5 items", fr: "5 éléments", de: "5 Artikel" }
 ```
 
-### `runtime.getLocales()`
+#### `getLocale()`
+
+Returns the current locale.
+
+```typescript
+i18n.getLocale();  // "en"
+```
+
+#### `getLocales()`
 
 Returns all available locales.
 
 ```typescript
-runtime.getLocales();  // ["de", "en", "fr"]
+i18n.getLocales();  // ["de", "en", "fr"]
 ```
 
-### `runtime.getAllTranslations()`
+#### `setLocale(locale)`
+
+Sets the current locale.
+
+```typescript
+i18n.setLocale("fr");
+i18n.getLocale();  // "fr"
+```
+
+#### `getAllTranslations()`
 
 Returns all loaded translations across all namespaces and locales.
 
 ```typescript
-const all = runtime.getAllTranslations();
+const all = i18n.getAllTranslations();
 // { web: { en: { greeting: "Hello" }, fr: { greeting: "Bonjour" } }, "web:auth": { ... } }
 ```
 
-### `runtime.getTranslationsForNamespace(ns)`
+#### `getTranslationsForNamespace(ns)`
 
 Returns translations for a specific namespace, or `undefined` if not found.
 
 ```typescript
-const webTranslations = runtime.getTranslationsForNamespace("web");
+const webTranslations = i18n.getTranslationsForNamespace("web");
 // { en: { greeting: "Hello" }, fr: { greeting: "Bonjour" } }
 
-const authTranslations = runtime.getTranslationsForNamespace("web:auth");
+const authTranslations = i18n.getTranslationsForNamespace("web:auth");
 // { en: { login: "Login" }, fr: { login: "Connexion" } }
 
-runtime.getTranslationsForNamespace("nonexistent"); // undefined
+i18n.getTranslationsForNamespace("nonexistent"); // undefined
 ```
 
 ## Translation Function
@@ -96,27 +123,16 @@ runtime.getTranslationsForNamespace("nonexistent"); // undefined
 The translation function supports MF2 MessageFormat with variable interpolation:
 
 ```typescript
-const t = runtime.t();
+const t = i18n.t();
 
-// Simple key
-t("greeting");                    // "Hello"
-
-// Variable interpolation
-t("greeting", { name: "World" }); // "Hello, World!"
-
-// Number formatting
-t("price", { amount: 1234.56 }); // "Total: $1,234.56"
-
-// DateTime formatting
+t("greeting");                              // "Hello"
+t("greeting", { name: "World" });           // "Hello, World!"
+t("price", { amount: 1234.56 });            // "Total: $1,234.56"
 t("date", { today: new Date("2024-02-02") }); // "Today is Feb 2, 2024"
-
-// Select
-t("status", { gender: "male" });   // "A man"
-t("status", { gender: "female" }); // "A woman"
-
-// Plural
-t("items", { count: 1 }); // "a item"
-t("items", { count: 5 }); // "5 items"
+t("status", { gender: "male" });            // "A man"
+t("status", { gender: "female" });          // "A woman"
+t("items", { count: 1 });                   // "a item"
+t("items", { count: 5 });                   // "5 items"
 ```
 
 ## Locale Fallback
@@ -127,13 +143,13 @@ When a key is missing in the current locale, the runtime falls back to the defau
 // messages/en.json: { "greeting": "Hello" }
 // messages/fr.json: {}
 
-runtime.t({ locale: "fr" })("greeting"); // "Hello" (fallback to default locale)
+i18n.t({ locale: "fr" })("greeting"); // "Hello"
 ```
 
 If the key is missing in both, the key itself is returned:
 
 ```typescript
-runtime.t()("nonexistent"); // "nonexistent"
+i18n.t()("nonexistent"); // "nonexistent"
 ```
 
 ## License
