@@ -1,18 +1,12 @@
-import { useCallback, useEffect, useReducer, useMemo } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { Locale, MessageKey, TranslateContext, TranslateFunction } from "@fanee/core";
 import { useRuntime } from "./provider";
 
-function useRuntimeVersion(): number {
-	const runtime = useRuntime();
-	const [version, bump] = useReducer((v: number) => v + 1, 0);
-
-	useEffect(() => {
-		return runtime.subscribe(() => {
-			bump();
-		});
-	}, [runtime]);
-
-	return version;
+function subscribeToRuntime(
+	runtime: ReturnType<typeof useRuntime>,
+	callback: () => void
+): () => void {
+	return runtime.subscribe(() => callback());
 }
 
 /**
@@ -49,7 +43,11 @@ export function useFanee(): { runtime: ReturnType<typeof useRuntime>; locale: Lo
  */
 export function useT(context?: Partial<TranslateContext>): TranslateFunction {
 	const runtime = useRuntime();
-	const version = useRuntimeVersion();
+	const version = useSyncExternalStore(
+		(callback) => subscribeToRuntime(runtime, callback),
+		() => runtime.getVersion(),
+		() => runtime.getVersion()
+	);
 	const locale = context?.locale;
 	const namespace = context?.namespace;
 
@@ -70,8 +68,11 @@ export function useT(context?: Partial<TranslateContext>): TranslateFunction {
  */
 export function useLocale(): Locale {
 	const runtime = useRuntime();
-	useRuntimeVersion();
-	return runtime.getLocale();
+	return useSyncExternalStore(
+		(callback) => subscribeToRuntime(runtime, callback),
+		() => runtime.getLocale(),
+		() => runtime.getLocale()
+	);
 }
 
 /**

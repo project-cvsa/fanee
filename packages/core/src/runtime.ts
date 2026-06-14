@@ -15,14 +15,17 @@ export class FaneeRuntime {
 	private state: FaneeState;
 	private queue: Promise<void>;
 	private listeners: Set<(state: FaneeState) => void>;
+	private version: number;
 
 	constructor() {
 		this.state = defaultState();
 		this.queue = Promise.resolve();
 		this.listeners = new Set();
+		this.version = 0;
 	}
 
 	private notify() {
+		this.version += 1;
 		const s = this.state;
 		for (const fn of this.listeners) {
 			fn(s);
@@ -232,6 +235,20 @@ export class FaneeRuntime {
 	 */
 	getLocale(): Locale {
 		return this.state.currentLocale;
+	}
+
+	/**
+	 * @internal
+	 * Get the current state version.
+	 *
+	 * The version increments monotonically every time the runtime state is
+	 * mutated. It is useful as a snapshot for external subscribers (e.g.
+	 * React's `useSyncExternalStore`) that need to detect any state change.
+	 *
+	 * @returns The current version number.
+	 */
+	getVersion(): number {
+		return this.version;
 	}
 
 	/**
