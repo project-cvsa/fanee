@@ -1,6 +1,6 @@
 import { MessageFormat } from "messageformat";
 import { DraftFunctions } from "messageformat/functions";
-import type { TranslateOptions, Locale, NamespaceResources, MessageFormattingMode } from "./types";
+import type { TranslateOptions } from "./types";
 
 const cache = new Map<string, Map<string, MessageFormat<string, string>>>();
 
@@ -42,37 +42,4 @@ export function defaultTranslate(
 	return mf.format(vars, (error) => {
 		console.warn(`[fanee] Failed to format message: ${error}`);
 	});
-}
-
-export function createTranslationFunction(
-	resources: NamespaceResources | undefined,
-	locale: Locale,
-	defaultLocale: Locale,
-	formatting: MessageFormattingMode,
-	translate: (msg: string, options?: TranslateOptions) => string
-): (key: string, vars?: Record<string, unknown>) => string {
-	return (key: string, vars?: Record<string, unknown>): string => {
-		if (!resources) {
-			return key;
-		}
-
-		let localeData = resources[locale];
-		if (!localeData) {
-			localeData = resources[defaultLocale];
-			if (!localeData) {
-				return key;
-			}
-		}
-
-		const value = localeData[key];
-		if (value === undefined) {
-			return key;
-		}
-
-		if (vars === undefined || Object.keys(vars).length === 0) {
-			return value;
-		}
-
-		return translate(value, { locale, vars, formatting });
-	};
 }

@@ -13,7 +13,5 @@ export type {
 	FaneeState,
 } from "./types";
 
-export { createTranslationFunction, defaultTranslate } from "./translator";
-export { defaultState } from "./state";
 export { FaneeRuntime } from "./runtime";
 export { i18n } from "./i18n";

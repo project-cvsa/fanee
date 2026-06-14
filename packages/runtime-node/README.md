@@ -22,9 +22,7 @@ i18n
 
 await i18n.ready();
 
-const t = i18n.t();
-
-t("greeting");
+i18n.t("greeting");
 ```
 
 ## API
@@ -43,19 +41,31 @@ Returns a state transformer function. When passed to `FaneeRuntime.use()`, it sc
 
 All translation methods live on the `FaneeRuntime` instance from `@fanee/core`.
 
-#### `t(context?)`
+#### `t(key, vars?)`
 
-Returns a translation function. The `context.namespace` appends to the base namespace from `.config()`.
+Translates a key using the current locale and base namespace. Returns a string.
 
 ```typescript
 // Config: baseNamespace = "web"
 
-i18n.t()("key");                          // looks up "web"
+i18n.t("key");                          // looks up "web" with current locale
 
-i18n.t({ namespace: "auth" })("key");     // looks up "web:auth"
+i18n.t("greeting", { name: "World" });  // with MF2 variable interpolation
+```
 
-i18n.t({ locale: "fr" })("key");          // looks up "web" with locale "fr"
-i18n.t({ namespace: "auth", locale: "fr" })("key");  // looks up "web:auth" with locale "fr"
+#### `getT(context?)`
+
+Returns a translation function bound to the given context. The `context.namespace` appends to the base namespace from `.config()`.
+
+```typescript
+// Config: baseNamespace = "web"
+
+i18n.getT()("key");                          // looks up "web"
+
+i18n.getT({ namespace: "auth" })("key");     // looks up "web:auth"
+
+i18n.getT({ locale: "fr" })("key");          // looks up "web" with locale "fr"
+i18n.getT({ namespace: "auth", locale: "fr" })("key");  // looks up "web:auth" with locale "fr"
 ```
 
 #### `tAll(key, vars?)`
@@ -123,7 +133,7 @@ i18n.getTranslationsForNamespace("nonexistent"); // undefined
 The translation function supports MF2 MessageFormat with variable interpolation:
 
 ```typescript
-const t = i18n.t();
+const t = i18n.getT();
 
 t("greeting");                              // "Hello"
 t("greeting", { name: "World" });           // "Hello, World!"
@@ -143,13 +153,13 @@ When a key is missing in the current locale, the runtime falls back to the defau
 // messages/en.json: { "greeting": "Hello" }
 // messages/fr.json: {}
 
-i18n.t({ locale: "fr" })("greeting"); // "Hello"
+i18n.getT({ locale: "fr" })("greeting"); // "Hello"
 ```
 
 If the key is missing in both, the key itself is returned:
 
 ```typescript
-i18n.t()("nonexistent"); // "nonexistent"
+i18n.t("nonexistent"); // "nonexistent"
 ```
 
 ## License

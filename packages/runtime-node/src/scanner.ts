@@ -117,14 +117,16 @@ async function buildResources(
 				.join(":") as Namespace;
 			const modInfo = modules.get(segmentNs);
 
-			if (modInfo) {
-				if (modInfo.standalone) {
-					hitStandalone = true;
-				}
-				if (!hitStandalone) {
-					const messagesDir = join(modInfo.path, "messages");
-					await loadMessagesDir(messagesDir, merged);
-				}
+			if (!modInfo) {
+				continue;
+			}
+			
+			if (modInfo.standalone) {
+				hitStandalone = true;
+			}
+			if (!hitStandalone) {
+				const messagesDir = join(modInfo.path, "messages");
+				await loadMessagesDir(messagesDir, merged);
 			}
 		}
 

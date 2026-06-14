@@ -45,7 +45,7 @@ describe("OTB Runtime", () => {
 
 		const runtime = makeRuntime();
 		await runtime.ready();
-		expect(runtime.t()("greeting")).toBe("Hello");
+		expect(runtime.t("greeting")).toBe("Hello");
 	});
 
 	test("t with locale context works", async () => {
@@ -58,8 +58,8 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("greeting")).toBe("Hello");
-		expect(runtime.t({ locale: "fr" })("greeting")).toBe("Bonjour");
+		expect(runtime.t("greeting")).toBe("Hello");
+		expect(runtime.getT({ locale: "fr" })("greeting")).toBe("Bonjour");
 	});
 
 	test("handles namespace hierarchy", async () => {
@@ -85,16 +85,16 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		const t = runtime.t({ namespace: "web" });
+		const t = runtime.getT({ namespace: "web" });
 		expect(t("rootKey")).toBe("root value");
 		expect(t("webKey")).toBe("web value");
 
-		const billingT = runtime.t({ namespace: "web:billing" });
+		const billingT = runtime.getT({ namespace: "web:billing" });
 		expect(billingT("rootKey")).toBe("root value");
 		expect(billingT("webKey")).toBe("web value");
 		expect(billingT("billingKey")).toBe("billing value");
 
-		const authT = runtime.t({ namespace: "web:auth" });
+		const authT = runtime.getT({ namespace: "web:auth" });
 		expect(authT("rootKey")).toBe("root value");
 		expect(authT("webKey")).toBe("web value");
 		expect(authT("authKey")).toBe("auth value");
@@ -115,10 +115,10 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime("en-US");
 		await runtime.ready();
 
-		expect(runtime.t({ locale: "en-US" })("greeting")).toBe(
+		expect(runtime.getT({ locale: "en-US" })("greeting")).toBe(
 			"Hello, {name}!"
 		);
-		expect(runtime.t({ locale: "fr-FR" })("greeting")).toBe(
+		expect(runtime.getT({ locale: "fr-FR" })("greeting")).toBe(
 			"Bonjour, {name}!"
 		);
 	});
@@ -134,7 +134,7 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		const t = runtime.t({ namespace: "web" });
+		const t = runtime.getT({ namespace: "web" });
 		expect(t("key")).toBe("web");
 		expect(t("shared")).toBe("web shared");
 	});
@@ -158,8 +158,8 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t({ namespace: "web" })("key")).toBe("web value");
-		expect(runtime.t({ namespace: "web:standalone" })("key")).toBe(
+		expect(runtime.getT({ namespace: "web" })("key")).toBe("web value");
+		expect(runtime.getT({ namespace: "web:standalone" })("key")).toBe(
 			"standalone value"
 		);
 	});
@@ -173,10 +173,10 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t({ namespace: "", locale: "de" })("greeting")).toBe(
+		expect(runtime.getT({ namespace: "", locale: "de" })("greeting")).toBe(
 			"Hello"
 		);
-		expect(runtime.t({ namespace: "", locale: "fr" })("missing")).toBe(
+		expect(runtime.getT({ namespace: "", locale: "fr" })("missing")).toBe(
 			"missing"
 		);
 	});
@@ -207,8 +207,8 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("nonexistent")).toBe("nonexistent");
-		expect(runtime.t()("existing")).toBe("value");
+		expect(runtime.t("nonexistent")).toBe("nonexistent");
+		expect(runtime.t("existing")).toBe("value");
 	});
 
 	test("tAll returns translations for all locales", async () => {
@@ -242,7 +242,7 @@ describe("OTB Runtime", () => {
 		expect(runtime.getLocale()).toBe("en");
 		runtime.setLocale("fr");
 		expect(runtime.getLocale()).toBe("fr");
-		expect(runtime.t()("greeting")).toBe("Bonjour");
+		expect(runtime.t("greeting")).toBe("Bonjour");
 	})
 });
 
@@ -287,8 +287,8 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("greeting", { user: "Bob" })).toContain("Bob");
-		expect(runtime.t()("greeting", { user: "Bob" })).toContain("Hello");
+		expect(runtime.t("greeting", { user: "Bob" })).toContain("Bob");
+		expect(runtime.t("greeting", { user: "Bob" })).toContain("Hello");
 	});
 
 	test("MF2 multiple variables", async () => {
@@ -300,10 +300,10 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("item", { count: 5, name: "Apples" })).toContain(
+		expect(runtime.t("item", { count: 5, name: "Apples" })).toContain(
 			"5"
 		);
-		expect(runtime.t()("item", { count: 5, name: "Apples" })).toContain(
+		expect(runtime.t("item", { count: 5, name: "Apples" })).toContain(
 			"Apples"
 		);
 	});
@@ -317,7 +317,7 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("greeting")).toBe("Hello {$user}!");
+		expect(runtime.t("greeting")).toBe("Hello {$user}!");
 	});
 
 	test("MF2 empty vars returns raw value", async () => {
@@ -329,7 +329,7 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("greeting", {})).toBe("Hello {$user}!");
+		expect(runtime.t("greeting", {})).toBe("Hello {$user}!");
 	});
 
 	test("MF2 number formatting", async () => {
@@ -342,7 +342,7 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("price", { amount: 1234.56 })).toBe(
+		expect(runtime.t("price", { amount: 1234.56 })).toBe(
 			"Total: $1,234.56"
 		);
 	});
@@ -358,7 +358,7 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		const result = runtime.t()("date", { today: new Date("2024-02-02") });
+		const result = runtime.t("date", { today: new Date("2024-02-02") });
 		expect(result).toContain("Feb 2, 2024");
 	});
 
@@ -373,9 +373,9 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("status", { gender: "male" })).toContain("man");
-		expect(runtime.t()("status", { gender: "female" })).toContain("woman");
-		expect(runtime.t()("status", { gender: "other" })).toContain("Someone");
+		expect(runtime.t("status", { gender: "male" })).toContain("man");
+		expect(runtime.t("status", { gender: "female" })).toContain("woman");
+		expect(runtime.t("status", { gender: "other" })).toContain("Someone");
 	});
 
 	test("MF2 plural", async () => {
@@ -389,8 +389,8 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t()("items", { count: 1 })).toContain("a item");
-		expect(runtime.t()("items", { count: 5 })).toContain("5 items");
+		expect(runtime.t("items", { count: 1 })).toContain("a item");
+		expect(runtime.t("items", { count: 5 })).toContain("5 items");
 	});
 
 	test("MF2 locale-specific formatting", async () => {
@@ -403,10 +403,10 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t({ locale: "en" })("amount", { n: 1234.56 })).toBe(
+		expect(runtime.getT({ locale: "en" })("amount", { n: 1234.56 })).toBe(
 			"1,234.56"
 		);
-		expect(runtime.t({ locale: "fr" })("amount", { n: 1234.56 })).toMatch(
+		expect(runtime.getT({ locale: "fr" })("amount", { n: 1234.56 })).toMatch(
 			/1\s234,56/
 		);
 	});
