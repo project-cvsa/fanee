@@ -93,26 +93,18 @@ jobs:
       - name: Publish @fanee/core
         run: npm publish --provenance --access public
         working-directory: packages/core
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @fanee/node
         run: npm publish --provenance --access public
         working-directory: packages/node
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @fanee/react
         run: npm publish --provenance --access public
         working-directory: packages/react
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @fanee/vite
         run: npm publish --provenance --access public
         working-directory: packages/vite
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   github-release:
     name: Create GitHub Release
