@@ -1,0 +1,6 @@
+{
+	"shop_title": "ショップ",
+	"product_name": "ウィジェット",
+	"product_price": "{$price :number minimumFractionDigits=2}",
+	"add_to_cart": "カートに入れる"
+}

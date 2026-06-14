@@ -1,5 +1,5 @@
 {
-	"name": "@fanee/core",
+	"name": "@fanee/react",
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
@@ -13,14 +13,24 @@
 	"scripts": {
 		"build": "bunx --bun tsdown",
 		"lint": "bunx --bun biome lint",
+		"test": "bun test --preload ./tests/setup.ts",
+		"test:coverage": "bun test --preload ./tests/setup.ts --coverage",
 		"typecheck": "bunx --bun tsgo --noEmit"
 	},
-	"devDependencies": {
-		"@types/bun": "latest",
-		"tsdown": "^0.22.2"
+	"peerDependencies": {
+		"react": ">=18"
 	},
 	"dependencies": {
-		"messageformat": "^4.0.0"
+		"@fanee/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@testing-library/react": "^16.0.0",
+		"@types/bun": "latest",
+		"@types/react": "^19.2.14",
+		"happy-dom": "^17.0.0",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.7",
+		"tsdown": "^0.22.2"
 	},
 	"files": [
 		"dist/"

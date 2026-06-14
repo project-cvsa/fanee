@@ -36,6 +36,11 @@
 			"enabled": false
 		}
 	},
+	"html": {
+		"formatter": {
+			"enabled": true
+		}
+	},
 	"vcs": {
 		"clientKind": "git",
 		"enabled": true,

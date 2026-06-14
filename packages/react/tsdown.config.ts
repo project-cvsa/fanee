@@ -3,7 +3,7 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	entry: ["./src/index.ts"],
 	deps: {
-		alwaysBundle: ["messageformat", "messageformat/functions"],
+		neverBundle: ["react", "react/jsx-runtime", "@fanee/core"],
 	},
 	dts: {
 		tsconfig: "./tsconfig.build.json",

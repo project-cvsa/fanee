@@ -1,0 +1,6 @@
+{
+	"shop_title": "Our Shop",
+	"product_name": "Widget",
+	"product_price": "{$price :number minimumFractionDigits=2}",
+	"add_to_cart": "Add to Cart"
+}

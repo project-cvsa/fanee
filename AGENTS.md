@@ -20,7 +20,7 @@ This repo contains both the OTB (Open Translation Bundle) specification — a ne
 Monorepo with Bun workspaces orchestrated by Turborepo.
 
 `packages/core/`: Core runtime: `FaneeRuntime` class.
-`packages/runtime-node/`: Node.js filesystem provider that scans OTB bundle directories. Depends on `@fanee/core`.
+`packages/node/`: Node.js filesystem provider that scans OTB bundle directories. Depends on `@fanee/core`.
 `spec/README.md`: The OTB (Open Translation Bundle) specification. 
 
 ### Common commands
@@ -37,6 +37,6 @@ Monorepo with Bun workspaces orchestrated by Turborepo.
 
 To run a single package's scripts:
 ```
-bun run --filter @fanee/runtime-node test
+bun run --filter @fanee/node test
 bun run --filter @fanee/core build
 ```

@@ -1,4 +1,4 @@
-# @fanee/runtime-node
+# @fanee/node
 
 OTB (Open Translation Bundle) filesystem provider for Node.js.
 
@@ -7,14 +7,14 @@ This package provides `initFaneeNode`, a plugin that scans an OTB bundle directo
 ## Installation
 
 ```bash
-npm install @fanee/core @fanee/runtime-node
+npm install @fanee/core @fanee/node
 ```
 
 ## Quick Start
 
 ```typescript
 import { i18n } from "@fanee/core";
-import { initFaneeNode } from "@fanee/runtime-node";
+import { initFaneeNode } from "@fanee/node";
 
 i18n
 	.config({ defaultLocale: "en", currentLocale: "en" })

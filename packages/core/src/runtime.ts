@@ -45,9 +45,7 @@ export class FaneeRuntime {
 	 * runtime.use((state) => ({ ...state, currentLocale: "zh-CN" }));
 	 * ```
 	 */
-	use(
-		fn: (state: FaneeState) => FaneeState | Promise<FaneeState>
-	): this {
+	use(fn: (state: FaneeState) => FaneeState | Promise<FaneeState>): this {
 		this.queue = this.queue.then(async () => {
 			this.state = await fn(this.state);
 			this.notify();
@@ -87,13 +85,9 @@ export class FaneeRuntime {
 	 */
 	// biome-ignore lint/suspicious/noThenProperty: intentional thenable for await support
 	then<TResult1 = void, TResult2 = never>(
-		onfulfilled?:
-			// biome-ignore lint/suspicious/noConfusingVoidType: matches Promise<void> queue resolution
-			| ((value: void) => TResult1 | PromiseLike<TResult1>)
-			| null,
-		onrejected?:
-			| ((reason: unknown) => TResult2 | PromiseLike<TResult2>)
-			| null
+		onfulfilled?: // biome-ignore lint/suspicious/noConfusingVoidType: matches Promise<void> queue resolution
+		((value: void) => TResult1 | PromiseLike<TResult1>) | null,
+		onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | null
 	): Promise<TResult1 | TResult2> {
 		return this.queue.then(onfulfilled, onrejected);
 	}
@@ -104,7 +98,9 @@ export class FaneeRuntime {
 
 		const locale = context?.locale ?? currentLocale;
 		const ns = context?.namespace
-			? (baseNamespace ? `${baseNamespace}:${context.namespace}` : context.namespace)
+			? baseNamespace
+				? `${baseNamespace}:${context.namespace}`
+				: context.namespace
 			: baseNamespace;
 
 		return { locale, ns };
@@ -270,9 +266,7 @@ export class FaneeRuntime {
 	 * @returns The locale-indexed messages for that namespace, or `undefined`
 	 *          if the namespace has not been loaded.
 	 */
-	getTranslationsForNamespace(
-		ns: string
-	): NamespaceResources | undefined {
+	getTranslationsForNamespace(ns: string): NamespaceResources | undefined {
 		return this.state.resources[ns];
 	}
 

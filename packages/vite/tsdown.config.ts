@@ -1,9 +1,9 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-	entry: ["./src/index.ts"],
+	entry: ["./src/index.ts", "./src/client.d.ts"],
 	deps: {
-		alwaysBundle: ["messageformat", "messageformat/functions"],
+		neverBundle: ["vite", "node:fs/promises", "node:path", "@fanee/core"],
 	},
 	dts: {
 		tsconfig: "./tsconfig.build.json",

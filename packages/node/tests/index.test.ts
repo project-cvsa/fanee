@@ -99,8 +99,7 @@ describe("OTB Runtime", () => {
 		expect(authT("webKey")).toBe("web value");
 		expect(authT("authKey")).toBe("auth value");
 
-		const billingTranslations =
-			runtime.getTranslationsForNamespace("web:billing");
+		const billingTranslations = runtime.getTranslationsForNamespace("web:billing");
 		expect(billingTranslations).toBeDefined();
 		expect(billingTranslations?.en?.rootKey).toBe("root value");
 	});
@@ -115,12 +114,8 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime("en-US");
 		await runtime.ready();
 
-		expect(runtime.getT({ locale: "en-US" })("greeting")).toBe(
-			"Hello, {name}!"
-		);
-		expect(runtime.getT({ locale: "fr-FR" })("greeting")).toBe(
-			"Bonjour, {name}!"
-		);
+		expect(runtime.getT({ locale: "en-US" })("greeting")).toBe("Hello, {name}!");
+		expect(runtime.getT({ locale: "fr-FR" })("greeting")).toBe("Bonjour, {name}!");
 	});
 
 	test("merge algorithm - descendant overrides ancestor", async () => {
@@ -159,9 +154,7 @@ describe("OTB Runtime", () => {
 		await runtime.ready();
 
 		expect(runtime.getT({ namespace: "web" })("key")).toBe("web value");
-		expect(runtime.getT({ namespace: "web:standalone" })("key")).toBe(
-			"standalone value"
-		);
+		expect(runtime.getT({ namespace: "web:standalone" })("key")).toBe("standalone value");
 	});
 
 	test("locale fallback behavior", async () => {
@@ -173,12 +166,8 @@ describe("OTB Runtime", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.getT({ namespace: "", locale: "de" })("greeting")).toBe(
-			"Hello"
-		);
-		expect(runtime.getT({ namespace: "", locale: "fr" })("missing")).toBe(
-			"missing"
-		);
+		expect(runtime.getT({ namespace: "", locale: "de" })("greeting")).toBe("Hello");
+		expect(runtime.getT({ namespace: "", locale: "fr" })("missing")).toBe("missing");
 	});
 
 	test("getLocales returns all available locales", async () => {
@@ -228,7 +217,6 @@ describe("OTB Runtime", () => {
 		expect(all.de).toBe("Hallo");
 	});
 
-
 	test("getLocale and setLocale work", async () => {
 		await createBundle({
 			"manifest.json": { format: "otb", specVersion: "0.3.0" },
@@ -243,7 +231,7 @@ describe("OTB Runtime", () => {
 		runtime.setLocale("fr");
 		expect(runtime.getLocale()).toBe("fr");
 		expect(runtime.t("greeting")).toBe("Bonjour");
-	})
+	});
 });
 
 describe("MF2 MessageFormat integration", () => {
@@ -300,12 +288,8 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t("item", { count: 5, name: "Apples" })).toContain(
-			"5"
-		);
-		expect(runtime.t("item", { count: 5, name: "Apples" })).toContain(
-			"Apples"
-		);
+		expect(runtime.t("item", { count: 5, name: "Apples" })).toContain("5");
+		expect(runtime.t("item", { count: 5, name: "Apples" })).toContain("Apples");
 	});
 
 	test("MF2 without variables returns raw value", async () => {
@@ -342,9 +326,7 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.t("price", { amount: 1234.56 })).toBe(
-			"Total: $1,234.56"
-		);
+		expect(runtime.t("price", { amount: 1234.56 })).toBe("Total: $1,234.56");
 	});
 
 	test("MF2 datetime formatting", async () => {
@@ -403,11 +385,7 @@ describe("MF2 MessageFormat integration", () => {
 		const runtime = makeRuntime();
 		await runtime.ready();
 
-		expect(runtime.getT({ locale: "en" })("amount", { n: 1234.56 })).toBe(
-			"1,234.56"
-		);
-		expect(runtime.getT({ locale: "fr" })("amount", { n: 1234.56 })).toMatch(
-			/1\s234,56/
-		);
+		expect(runtime.getT({ locale: "en" })("amount", { n: 1234.56 })).toBe("1,234.56");
+		expect(runtime.getT({ locale: "fr" })("amount", { n: 1234.56 })).toMatch(/1\s234,56/);
 	});
 });

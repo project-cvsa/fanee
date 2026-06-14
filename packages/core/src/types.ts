@@ -41,10 +41,7 @@ export interface TranslateContext {
 }
 
 /** A pre-bound translate function tied to a specific locale and namespace. */
-export type TranslateFunction = (
-	key: MessageKey,
-	vars?: Record<string, unknown>
-) => string;
+export type TranslateFunction = (key: MessageKey, vars?: Record<string, unknown>) => string;
 
 /** A map of locale → translated string, typically the result of {@link runtime.FaneeRuntime.tAll | tAll}. */
 export type TranslationsByLocale = Record<Locale, string>;

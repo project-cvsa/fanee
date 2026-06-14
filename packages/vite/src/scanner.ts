@@ -1,24 +1,16 @@
 import { readFile, readdir, stat } from "node:fs/promises";
-import { join } from "node:path";
-import type {
-	OTBManifest,
-	LocaleMessages,
-	Namespace,
-	BundleResources,
-} from "@fanee/core";
+import { join, resolve } from "node:path";
+import type { BundleResources, LocaleMessages, Namespace, OTBManifest } from "@fanee/core";
 
 export async function loadManifest(bundlePath: string): Promise<OTBManifest> {
-	const rootManifestPath = join(bundlePath, "manifest.json");
-	const rootManifestContent = await readFile(rootManifestPath, "utf-8");
-	const rootManifest = JSON.parse(rootManifestContent) as OTBManifest;
+	const content = await readFile(join(bundlePath, "manifest.json"), "utf-8");
+	const manifest = JSON.parse(content) as OTBManifest;
 
-	if (rootManifest.format !== "otb") {
-		throw new Error(
-			`[fanee] Invalid bundle format: expected "otb", got "${rootManifest.format}"`
-		);
+	if (manifest.format !== "otb") {
+		throw new Error(`[fanee] Invalid bundle format: expected "otb", got "${manifest.format}"`);
 	}
 
-	return rootManifest;
+	return manifest;
 }
 
 export async function loadMessagesDir(
@@ -36,15 +28,10 @@ export async function loadMessagesDir(
 		if (!entry.endsWith(".json")) continue;
 
 		const locale = entry.replace(/\.json$/, "");
-		const filePath = join(dir, entry);
-
-		const content = await readFile(filePath, "utf-8");
+		const content = await readFile(join(dir, entry), "utf-8");
 		const data = JSON.parse(content) as LocaleMessages;
 
-		target[locale] = {
-			...(target[locale] ?? {}),
-			...data,
-		};
+		target[locale] = { ...(target[locale] ?? {}), ...data };
 	}
 }
 
@@ -65,15 +52,13 @@ async function collectModules(
 	for (const entry of entries) {
 		const fullPath = join(modulesDir, entry);
 		const entryStat = await stat(fullPath);
-
 		if (!entryStat.isDirectory()) continue;
 
 		const manifestPath = join(fullPath, "manifest.json");
 		let manifest: { standalone?: boolean } | null = null;
-
 		try {
 			const content = await readFile(manifestPath, "utf-8");
-			manifest = JSON.parse(content);
+			manifest = JSON.parse(content) as { standalone?: boolean };
 		} catch {
 			await collectModules(fullPath, parentNamespace, modules);
 			continue;
@@ -106,35 +91,27 @@ async function buildResources(
 		if (namespace === "") continue;
 
 		const parts = namespace.split(":");
-		let hitStandalone = false;
 		const merged: Record<string, Record<string, string>> = {};
-
 		await loadMessagesDir(rootMessagesDir, merged);
 
-		for (const part of parts) {
-			const segmentNs = parts
-				.slice(0, parts.indexOf(part) + 1)
-				.join(":") as Namespace;
+		let hitStandalone = false;
+		for (let i = 0; i < parts.length; i++) {
+			const segmentNs = parts.slice(0, i + 1).join(":") as Namespace;
 			const modInfo = modules.get(segmentNs);
+			if (!modInfo) continue;
 
-			if (!modInfo) {
-				continue;
-			}
-			
 			if (modInfo.standalone) {
 				hitStandalone = true;
 			}
 			if (!hitStandalone) {
-				const messagesDir = join(modInfo.path, "messages");
-				await loadMessagesDir(messagesDir, merged);
+				await loadMessagesDir(join(modInfo.path, "messages"), merged);
 			}
 		}
 
 		if (mod.standalone) {
-			const newMerged: Record<string, Record<string, string>> = {};
-			const messagesDir = join(mod.path, "messages");
-			await loadMessagesDir(messagesDir, newMerged);
-			resources[namespace] = newMerged;
+			const standalone: Record<string, Record<string, string>> = {};
+			await loadMessagesDir(join(mod.path, "messages"), standalone);
+			resources[namespace] = standalone;
 		} else {
 			resources[namespace] = merged;
 		}
@@ -143,19 +120,23 @@ async function buildResources(
 	return resources;
 }
 
-export async function scanBundle(
-	bundlePath: string
-): Promise<BundleResources> {
-	const rootManifest = await loadManifest(bundlePath);
+/**
+ * Scan an OTB bundle directory and produce merged BundleResources.
+ *
+ * Implements the OTB Bundle-phase merge algorithm independently:
+ * descendant modules override ancestor modules, and `standalone: true`
+ * modules do not inherit ancestor data.
+ */
+export async function scanBundle(bundlePath: string): Promise<BundleResources> {
+	const resolvedPath = resolve(bundlePath);
+	await loadManifest(resolvedPath);
 
 	const modules = new Map<Namespace, ModuleInfo>();
 	modules.set("", {
-		path: bundlePath,
-		standalone: rootManifest.standalone ?? false,
+		path: resolvedPath,
+		standalone: false,
 	});
 
-	const modulesDir = join(bundlePath, "modules");
-	await collectModules(modulesDir, "", modules);
-
-	return buildResources(bundlePath, modules);
+	await collectModules(join(resolvedPath, "modules"), "", modules);
+	return buildResources(resolvedPath, modules);
 }

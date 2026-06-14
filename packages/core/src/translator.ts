@@ -24,10 +24,7 @@ function getOrCreateMessageFormat(
 	return mf;
 }
 
-export function defaultTranslate(
-	msg: string,
-	options?: TranslateOptions
-): string {
+export function defaultTranslate(msg: string, options?: TranslateOptions): string {
 	if (!options?.vars || Object.keys(options.vars).length === 0) {
 		return msg;
 	}

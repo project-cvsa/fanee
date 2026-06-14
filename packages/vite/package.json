@@ -1,0 +1,41 @@
+{
+	"name": "@fanee/vite",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		},
+		"./client": {
+			"types": "./dist/client.d.ts"
+		}
+	},
+	"version": "0.6.0",
+	"type": "module",
+	"private": false,
+	"license": "MIT",
+	"repository": {
+		"url": "https://github.com/project-cvsa/fanee"
+	},
+	"scripts": {
+		"build": "bunx --bun tsdown",
+		"lint": "bunx --bun biome lint",
+		"test": "bun test",
+		"test:coverage": "bun test --coverage",
+		"typecheck": "bunx --bun tsgo --noEmit"
+	},
+	"peerDependencies": {
+		"vite": ">=5"
+	},
+	"dependencies": {
+		"@fanee/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/bun": "latest",
+		"@types/node": "^22.0.0",
+		"tsdown": "^0.22.2",
+		"vite": "^8.0.12"
+	},
+	"files": [
+		"dist/"
+	]
+}
