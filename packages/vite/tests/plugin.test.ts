@@ -44,7 +44,7 @@ describe("fanee vite plugin", () => {
 			undefined,
 			{ isEntry: false }
 		);
-		expect(resolved).toBe("virtual:fanee?fanee");
+		expect(resolved).toBe("virtual:fanee");
 	});
 
 	test("loads merged resources as a JS module", async () => {
@@ -56,7 +56,7 @@ describe("fanee vite plugin", () => {
 		});
 
 		const plugin = fanee({ bundlePath: tempDir });
-		const source = await (plugin.load as LoadHook).call(undefined, "virtual:fanee?fanee");
+		const source = await (plugin.load as LoadHook).call(undefined, "virtual:fanee");
 		expect(typeof source).toBe("string");
 		expect(source).toContain('"greeting":"Hello"');
 		expect(source).toContain('"webKey":"web"');
@@ -75,6 +75,6 @@ describe("fanee vite plugin", () => {
 			undefined,
 			{ isEntry: false }
 		);
-		expect(resolved).toBe("virtual:translations?fanee");
+		expect(resolved).toBe("virtual:translations");
 	});
 });

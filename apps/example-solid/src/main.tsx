@@ -24,5 +24,5 @@ render(
 			<App />
 		</FaneeProvider>
 	),
-	rootElement,
+	rootElement
 );

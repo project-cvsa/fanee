@@ -1,20 +1,21 @@
 import { defineConfig } from "tsdown";
+import solid from 'unplugin-solid/rolldown';
 
 export default defineConfig({
 	entry: ["./src/index.ts"],
 	deps: {
-		neverBundle: ["solid-js", "solid-js/web", "solid-js/h", "@fanee/core"],
+		neverBundle: ["@fanee/core"],
 	},
 	dts: {
 		tsconfig: "./tsconfig.build.json",
 		sourcemap: true,
 	},
+	platform: 'neutral',
 	outputOptions: {
 		format: "esm",
-		entryFileNames: "[name].js",
-		chunkFileNames: "[name]-[hash].js",
 	},
 	sourcemap: true,
 	minify: true,
 	treeshake: true,
+	plugins: [solid()],
 });

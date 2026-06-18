@@ -1,5 +1,13 @@
-import { createContext, useContext, createSignal, onCleanup, type JSX, type Accessor } from "solid-js";
-import h from "solid-js/h";
+import {
+	createContext,
+	useContext,
+	createSignal,
+	onCleanup,
+	createMemo,
+	type JSX,
+	type Accessor,
+	createEffect,
+} from "solid-js";
 import { i18n, type FaneeRuntime, type Locale } from "@fanee/core";
 
 interface FaneeContextValue {
@@ -11,55 +19,60 @@ interface FaneeContextValue {
 const FaneeContext = createContext<FaneeContextValue>();
 
 export interface FaneeProviderProps {
-	/** FaneeRuntime instance to expose to the Solid tree. */
 	runtime: FaneeRuntime;
-	/** Solid children. */
 	children: JSX.Element;
 }
 
-/**
- * Provides a FaneeRuntime instance to descendant components.
- *
- * @example
- * ```tsx
- * const runtime = new FaneeRuntime().config({ currentLocale: "en" });
- *
- * <FaneeProvider runtime={runtime}>
- * <App />
- * </FaneeProvider>
- * ```
- */
 export function FaneeProvider(props: FaneeProviderProps) {
 	const [locale, setLocale] = createSignal<Locale>(props.runtime.getLocale());
 	const [version, setVersion] = createSignal<number>(props.runtime.getVersion());
 
-	const unsub = props.runtime.subscribe(() => {
-		setLocale(() => props.runtime.getLocale());
-		setVersion(props.runtime.getVersion());
-	});
-	onCleanup(unsub);
+	let unsub: (() => void) | undefined;
 
-	const value: FaneeContextValue = {
-		runtime: props.runtime,
+	createEffect(() => {
+		if (unsub) unsub();
+
+		const currentRuntime = props.runtime;
+
+		setLocale(() => currentRuntime.getLocale());
+		setVersion(currentRuntime.getVersion());
+
+		unsub = currentRuntime.subscribe(() => {
+			setLocale(() => currentRuntime.getLocale());
+			setVersion(currentRuntime.getVersion());
+		});
+	});
+
+	onCleanup(() => {
+		if (unsub) unsub();
+	});
+
+	const value = createMemo<FaneeContextValue>(() => ({
+		get runtime() {
+			return props.runtime;
+		},
 		locale,
 		version,
-	};
+	}));
 
-	return h(FaneeContext.Provider, {
-		value,
-		get children() {
-			return props.children;
-		},
-	});
+	return <FaneeContext.Provider value={value()}>{props.children}</FaneeContext.Provider>;
 }
 
-/** @internal */
+const [globalLocale, setGlobalLocale] = createSignal<Locale>(i18n.getLocale());
+const [globalVersion, setGlobalVersion] = createSignal<number>(i18n.getVersion());
+
+i18n.subscribe(() => {
+	setGlobalLocale(() => i18n.getLocale());
+	setGlobalVersion(i18n.getVersion());
+});
+
+const fallbackContext: FaneeContextValue = {
+	runtime: i18n,
+	locale: globalLocale,
+	version: globalVersion,
+};
+
 export function useFaneeContext(): FaneeContextValue {
 	const ctx = useContext(FaneeContext);
-	if (!ctx) {
-		const [locale] = createSignal<Locale>(i18n.getLocale());
-		const [version] = createSignal<number>(i18n.getVersion());
-		return { runtime: i18n, locale, version };
-	}
-	return ctx;
+	return ctx ?? fallbackContext;
 }

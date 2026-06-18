@@ -3,7 +3,7 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"version": "0.7.0",
+	"version": "0.8.0",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
@@ -27,7 +27,8 @@
 		"@types/bun": "latest",
 		"happy-dom": "^17.0.0",
 		"solid-js": "^1.9.0",
-		"tsdown": "^0.22.2"
+		"tsdown": "^0.22.2",
+		"unplugin-solid": "^1.0.0"
 	},
 	"files": [
 		"dist/"

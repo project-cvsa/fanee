@@ -2,8 +2,6 @@
 
 Vite plugin for the Open Translation Bundle (OTB) format.
 
-Scans an OTB bundle at build time, resolves module hierarchy, performs the OTB merge algorithm, and exposes the merged resources as a virtual module.
-
 ## Installation
 
 ```bash
@@ -24,6 +22,8 @@ In order to make virtual modules available in TypeScript, add the following to y
 
 ## Usage
 
+Import and configure the plugin:
+
 ```ts
 // vite.config.ts
 import { defineConfig } from "vite";
@@ -38,17 +38,35 @@ export default defineConfig({
 });
 ```
 
-```ts
-// main.tsx
-import { resources } from "virtual:fanee";
-import { FaneeRuntime } from "@fanee/core";
+Import the translation resources via `virtual:fanee` module:
 
-const runtime = new FaneeRuntime().config({
+```ts
+import { resources } from "virtual:fanee";
+import { i18n } from "@fanee/core";
+
+i18n.config({
 	defaultLocale: "en",
 	currentLocale: "en",
 	resources,
 });
 ```
+
+### Tree shaking
+
+If you only need strings contained within a specific namespace, you can import them only from `virtual:fanee/namespace`:
+
+```ts
+import { resources } from "virtual:fanee/checkout";
+import { i18n } from "@fanee/core";
+
+i18n.config({
+	defaultLocale: "en",
+	currentLocale: "en",
+	resources,
+});
+```
+
+`resources` will only contain strings under the namespace `checkout`, which results in smaller bundle size.
 
 ## Options
 
@@ -56,10 +74,6 @@ const runtime = new FaneeRuntime().config({
 |---|---|---|---|
 | `bundlePath` | `string` | — | Path to the OTB bundle directory. |
 | `virtualId` | `string` | `"virtual:fanee"` | Virtual module ID to expose. |
-
-## HMR
-
-During development, editing `manifest.json`, `messages/*.json`, or `modules/**` files triggers HMR for the virtual module.
 
 ## License
 

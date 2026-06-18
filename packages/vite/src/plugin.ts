@@ -13,27 +13,34 @@ const DEFAULT_VIRTUAL_ID = "virtual:fanee";
 
 export function fanee(options: FaneePluginOptions): Plugin {
 	const virtualId = options.virtualId ?? DEFAULT_VIRTUAL_ID;
-	const resolvedId = `${virtualId}?fanee`;
 	const bundlePath = resolve(options.bundlePath);
 
-	async function generateModule(): Promise<string> {
+	async function generateModule(namespace: string): Promise<string> {
 		const resources = await scanBundle(bundlePath);
-		return `export const resources = ${JSON.stringify(resources)};\n`;
+		if (!namespace) {
+			return `export const resources = ${JSON.stringify(resources)};\n`;
+		}
+		return `export const resources = ${JSON.stringify({
+			[namespace]: resources[namespace]
+		})};\n`;
 	}
 
 	return {
 		name: "fanee",
-		resolveId(id) {
-			if (id === virtualId) {
-				return resolvedId;
+		resolveId(source) {
+			if (source.startsWith(`virtual:fanee`)) {
+				return source;
 			}
 			return null;
 		},
-		async load(id) {
-			if (id !== resolvedId) {
+		load(id) {
+			if (!id.startsWith(virtualId)) {
 				return null;
 			}
-			return generateModule();
+
+			// "virtual:fanee/namespace" -> "namespace"
+			const importPath = id.slice(virtualId.length + 1);
+			return generateModule(importPath);
 		},
 		async handleHotUpdate({ file, server }) {
 			const rel = relative(bundlePath, file);
@@ -41,7 +48,7 @@ export function fanee(options: FaneePluginOptions): Plugin {
 				return;
 			}
 
-			const moduleNode = server.moduleGraph.getModuleById(resolvedId);
+			const moduleNode = server.moduleGraph.getModuleById(virtualId);
 			if (moduleNode) {
 				return [moduleNode];
 			}
