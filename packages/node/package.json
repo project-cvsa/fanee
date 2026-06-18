@@ -3,7 +3,7 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"version": "0.7.0",
+	"version": "0.7.1",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
@@ -19,11 +19,11 @@
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
-		"tsdown": "^0.22.2"
+		"tsdown": "^0.22.2",
+		"@fanee/fs-scanner": "workspace:*"
 	},
 	"dependencies": {
-		"@fanee/core": "workspace:*",
-		"@fanee/fs-scanner": "workspace:*"
+		"@fanee/core": "workspace:*"
 	},
 	"files": [
 		"dist/"

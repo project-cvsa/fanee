@@ -105,6 +105,10 @@ jobs:
       - name: Publish @fanee/vite
         run: npm publish --provenance --access public
         working-directory: packages/vite
+      
+      - name: Publish @fanee/solid
+        run: npm publish --provenance --access public
+        working-directory: packages/solid
 
   github-release:
     name: Create GitHub Release

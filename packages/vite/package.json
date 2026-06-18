@@ -9,7 +9,7 @@
 			"types": "./dist/client.d.ts"
 		}
 	},
-	"version": "0.7.0",
+	"version": "0.7.1",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
@@ -27,14 +27,14 @@
 		"vite": ">=5"
 	},
 	"dependencies": {
-		"@fanee/core": "workspace:*",
-		"@fanee/fs-scanner": "workspace:*"
+		"@fanee/core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
 		"@types/node": "^22.0.0",
 		"tsdown": "^0.22.2",
-		"vite": "^8.0.12"
+		"vite": "^8.0.12",
+		"@fanee/fs-scanner": "workspace:*"
 	},
 	"files": [
 		"dist/"

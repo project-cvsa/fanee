@@ -55,7 +55,7 @@
     },
     "packages/fs-scanner": {
       "name": "@fanee/fs-scanner",
-      "version": "0.1.0",
+      "version": "0.7.0",
       "dependencies": {
         "@fanee/core": "workspace:*",
         "@types/adm-zip": "^0.5.8",
@@ -68,19 +68,19 @@
     },
     "packages/node": {
       "name": "@fanee/node",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "dependencies": {
         "@fanee/core": "workspace:*",
-        "@fanee/fs-scanner": "workspace:*",
       },
       "devDependencies": {
+        "@fanee/fs-scanner": "workspace:*",
         "@types/bun": "latest",
         "tsdown": "^0.22.2",
       },
     },
     "packages/react": {
       "name": "@fanee/react",
-      "version": "0.6.2",
+      "version": "0.7.0",
       "dependencies": {
         "@fanee/core": "workspace:*",
       },
@@ -99,7 +99,7 @@
     },
     "packages/solid": {
       "name": "@fanee/solid",
-      "version": "0.6.2",
+      "version": "0.7.0",
       "dependencies": {
         "@fanee/core": "workspace:*",
       },
@@ -115,12 +115,12 @@
     },
     "packages/vite": {
       "name": "@fanee/vite",
-      "version": "0.6.1",
+      "version": "0.7.0",
       "dependencies": {
         "@fanee/core": "workspace:*",
-        "@fanee/fs-scanner": "workspace:*",
       },
       "devDependencies": {
+        "@fanee/fs-scanner": "workspace:*",
         "@types/bun": "latest",
         "@types/node": "^22.0.0",
         "tsdown": "^0.22.2",
