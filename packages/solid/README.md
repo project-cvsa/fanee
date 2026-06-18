@@ -1,11 +1,11 @@
-# @fanee/react
+# @fanee/solid
 
-React bindings for Fanee.
+SolidJS bindings for Fanee.
 
 ## Installation
 
 ```bash
-npm install @fanee/core @fanee/react
+npm install @fanee/core @fanee/solid
 ```
 
 ## Quick Start
@@ -31,12 +31,11 @@ export default defineConfig({
 		react(),
 	],
 });
-
 ```
 
 ```tsx
-import { i18n } from "@fanee/core";
-import { useT, useLocale, useSetLocale } from "@fanee/react";
+import { FaneeRuntime } from "@fanee/core";
+import { FaneeProvider, useT, useLocale, useSetLocale } from "@fanee/solid";
 import { resources } from "virtual:fanee";
 
 i18n.config({
@@ -53,8 +52,8 @@ function App() {
 	return (
 		<div>
 			<p>{t("hello", { name: "World" })}</p>
-			<p>Current locale: {locale}</p>
-			<button onClick={() => setLocale(locale === "en" ? "fr" : "en")}>
+			<p>Current locale: {locale()}</p>
+			<button onClick={() => setLocale(locale() === "en" ? "fr" : "en")}>
 				Switch locale
 			</button>
 		</div>
@@ -70,11 +69,11 @@ Wraps your app and exposes a `FaneeRuntime` instance to descendant hooks.
 
 ### `useT(context?)`
 
-Returns a bound translate function. Re-renders when the locale, namespace, or resources change.
+Returns a reactive translate function. Automatically re-evaluates when the locale, namespace, or resources change.
 
 ### `useLocale()`
 
-Returns the active locale.
+Returns a reactive accessor for the active locale. Call it (`locale()`) to read the current value.
 
 ### `useSetLocale()`
 
@@ -82,7 +81,7 @@ Returns a function to update the active locale.
 
 ### `useFanee()`
 
-Returns `{ runtime, locale }` for direct access to the runtime instance.
+Returns `{ runtime, locale }` for direct access to the runtime instance. `locale` is a reactive accessor.
 
 ## License
 

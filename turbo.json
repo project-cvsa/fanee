@@ -12,9 +12,20 @@
 			"cache": false,
 			"persistent": true
 		},
-		"lint": {},
-		"test": {},
-		"test:coverage": {},
-		"typecheck": {}
+		"lint": {
+			"dependsOn": ["build"]
+		},
+		"test": {
+			"dependsOn": ["build"]
+		},
+		"test:coverage": {
+			"dependsOn": ["build"]
+		},
+		"typecheck": {
+			"dependsOn": ["build"]
+		},
+		"ci": {
+			"dependsOn": ["typecheck", "test", "lint"]
+		}
 	}
 }

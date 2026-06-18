@@ -1,18 +1,15 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
-import { FaneeRuntime } from "@fanee/core";
-import { FaneeProvider } from "@fanee/react";
+import { i18n } from "@fanee/core";
 import { resources } from "virtual:fanee";
 import "./index.css";
 import App from "./App.tsx";
 
-const runtime = new FaneeRuntime().config({
+i18n.config({
 	defaultLocale: "en",
 	currentLocale: "en",
 	resources,
 });
-
-runtime.ready();
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {
@@ -21,8 +18,6 @@ if (!rootElement) {
 
 createRoot(rootElement).render(
 	<StrictMode>
-		<FaneeProvider runtime={runtime}>
-			<App />
-		</FaneeProvider>
+		<App />
 	</StrictMode>
 );

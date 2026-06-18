@@ -1,14 +1,8 @@
 {
-	"name": "@fanee/vite",
-	"exports": {
-		".": {
-			"types": "./dist/index.d.ts",
-			"default": "./dist/index.js"
-		},
-		"./client": {
-			"types": "./dist/client.d.ts"
-		}
-	},
+	"name": "@fanee/solid",
+	"main": "dist/index.js",
+	"module": "dist/index.js",
+	"types": "dist/index.d.ts",
 	"version": "0.7.0",
 	"type": "module",
 	"private": false,
@@ -19,22 +13,21 @@
 	"scripts": {
 		"build": "bunx --bun tsdown",
 		"lint": "bunx --bun biome lint",
-		"test": "bun test",
-		"test:coverage": "bun test --coverage",
+		"test": "bun test --preload ./tests/setup.ts --conditions browser",
+		"test:coverage": "bun test --preload ./tests/setup.ts --conditions browser --coverage",
 		"typecheck": "bunx --bun tsgo --noEmit"
 	},
 	"peerDependencies": {
-		"vite": ">=5"
+		"solid-js": ">=1.0"
 	},
 	"dependencies": {
-		"@fanee/core": "workspace:*",
-		"@fanee/fs-scanner": "workspace:*"
+		"@fanee/core": "workspace:*"
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
-		"@types/node": "^22.0.0",
-		"tsdown": "^0.22.2",
-		"vite": "^8.0.12"
+		"happy-dom": "^17.0.0",
+		"solid-js": "^1.9.0",
+		"tsdown": "^0.22.2"
 	},
 	"files": [
 		"dist/"

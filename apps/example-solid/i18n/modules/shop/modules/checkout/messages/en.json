@@ -1,0 +1,6 @@
+{
+	"checkout_title": "Checkout",
+	"total": "Total: {$total :number currency=USD style=currency}",
+	"order_date": "Order date: {$date :datetime dateStyle=medium}",
+	"confirm_order": "Place Order"
+}

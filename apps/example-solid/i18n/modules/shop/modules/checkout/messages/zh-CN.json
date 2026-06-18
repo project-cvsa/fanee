@@ -1,0 +1,6 @@
+{
+	"checkout_title": "结算",
+	"total": "合计：{$total :number currency=CNY style=currency}",
+	"order_date": "下单日期：{$date :datetime dateStyle=medium}",
+	"confirm_order": "提交订单"
+}

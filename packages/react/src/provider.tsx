@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from "react";
-import type { FaneeRuntime } from "@fanee/core";
+import { i18n, type FaneeRuntime } from "@fanee/core";
 
 const FaneeContext = createContext<FaneeRuntime | null>(null);
 
@@ -30,7 +30,7 @@ export function FaneeProvider({ runtime, children }: FaneeProviderProps) {
 export function useRuntime(): FaneeRuntime {
 	const runtime = useContext(FaneeContext);
 	if (!runtime) {
-		throw new Error("[fanee] Fanee hooks must be used within a FaneeProvider");
+		return i18n;
 	}
 	return runtime;
 }

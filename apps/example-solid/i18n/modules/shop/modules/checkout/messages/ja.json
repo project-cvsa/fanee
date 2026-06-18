@@ -1,0 +1,6 @@
+{
+	"checkout_title": "チェックアウト",
+	"total": "合計：{$total :number currency=JPY style=currency}",
+	"order_date": "注文日：{$date :datetime dateStyle=medium}",
+	"confirm_order": "注文を確定"
+}

@@ -4,6 +4,7 @@ export default defineConfig({
 	entry: ["./src/index.ts", "./src/client.d.ts"],
 	deps: {
 		neverBundle: ["vite", "node:fs/promises", "node:path", "@fanee/core"],
+		alwaysBundle: ["@fanee/fs-scanner"]
 	},
 	dts: {
 		tsconfig: "./tsconfig.build.json",

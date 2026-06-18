@@ -1,6 +1,9 @@
-import { readFile, readdir, stat } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { readFile, readdir, stat, type FileHandle, open, mkdtemp } from "node:fs/promises";
+import path, { join, resolve } from "node:path";
 import type { BundleResources, LocaleMessages, Namespace, OTBManifest } from "@fanee/core";
+import AdmZip from 'adm-zip';
+import { tmpdir } from "node:os";
+import { rm } from "node:fs/promises";
 
 export async function loadManifest(bundlePath: string): Promise<OTBManifest> {
 	const content = await readFile(join(bundlePath, "manifest.json"), "utf-8");
@@ -120,6 +123,29 @@ async function buildResources(
 	return resources;
 }
 
+export async function isZipArchive(path: string) {
+	let fileHandle: FileHandle | null = null;
+	try {
+		fileHandle = await open(path, 'r');
+		const buffer = Buffer.alloc(4);
+		await fileHandle.read(buffer, 0, 4, 0);
+		return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
+	} catch {
+		return false;
+	} finally {
+		if (fileHandle) {
+			await fileHandle.close();
+		}
+	}
+}
+
+export async function unarchiveZip(pathStr: string) {
+	const tmpDir = await mkdtemp(path.join(tmpdir(), `zip-${performance.now()}`));
+	const zip = new AdmZip(pathStr);
+	zip.extractAllTo(tmpDir, true);
+	return tmpDir;
+}
+
 /**
  * Scan an OTB bundle directory and produce merged BundleResources.
  *
@@ -129,14 +155,23 @@ async function buildResources(
  */
 export async function scanBundle(bundlePath: string): Promise<BundleResources> {
 	const resolvedPath = resolve(bundlePath);
-	await loadManifest(resolvedPath);
+	const isZip = await isZipArchive(bundlePath);
+
+	const finalPath = isZip ? await unarchiveZip(resolvedPath) : resolvedPath
+
+	await loadManifest(finalPath);
 
 	const modules = new Map<Namespace, ModuleInfo>();
 	modules.set("", {
-		path: resolvedPath,
+		path: finalPath,
 		standalone: false,
 	});
 
-	await collectModules(join(resolvedPath, "modules"), "", modules);
-	return buildResources(resolvedPath, modules);
+	await collectModules(join(finalPath, "modules"), "", modules);
+	const resources = await buildResources(finalPath, modules);
+	if (isZip) {
+		try { rm(finalPath, { recursive: true }); }
+		finally { }
+	}
+	return resources;
 }

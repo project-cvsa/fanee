@@ -12,7 +12,8 @@
 		"build": "bunx --bun turbo run build",
 		"lint": "bunx --bun turbo run lint",
 		"typecheck": "bunx --bun turbo run typecheck",
-		"format": "biome format --write ."
+		"format": "biome format --write .",
+		"ci": "bunx --bun turbo run ci"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.4.8",

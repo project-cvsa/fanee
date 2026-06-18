@@ -3,7 +3,7 @@ import { defineConfig } from "tsdown";
 export default defineConfig({
 	entry: ["./src/index.ts"],
 	deps: {
-		alwaysBundle: ["@fanee/fs-scanner"]
+		neverBundle: ["solid-js", "solid-js/web", "solid-js/h", "@fanee/core"],
 	},
 	dts: {
 		tsconfig: "./tsconfig.build.json",

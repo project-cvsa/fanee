@@ -98,13 +98,4 @@ describe("@fanee/react", () => {
 
 		expect(screen.getByTestId("namespaced").textContent).toBe("Error hello");
 	});
-
-	test("throws when hooks are used outside provider", () => {
-		function Orphan() {
-			const t = useT();
-			return <p>{t("hello")}</p>;
-		}
-
-		expect(() => render(<Orphan />)).toThrow();
-	});
 });

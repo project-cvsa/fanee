@@ -1,0 +1,6 @@
+{
+	"greeting": "你好，{$name}！",
+	"site_title": "Fanee 演示",
+	"locale_label": "中文",
+	"item_count": ".input {$count :number} .match $count one {{{$count} 件商品}} * {{{$count} 件商品}}"
+}

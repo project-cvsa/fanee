@@ -2,9 +2,6 @@ import { defineConfig } from "tsdown";
 
 export default defineConfig({
 	entry: ["./src/index.ts"],
-	deps: {
-		alwaysBundle: ["@fanee/fs-scanner"]
-	},
 	dts: {
 		tsconfig: "./tsconfig.build.json",
 		sourcemap: true,

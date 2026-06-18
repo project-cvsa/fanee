@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import { scanBundle } from "@/index";
+import { scanBundle } from "@fanee/fs-scanner";
 
 async function createBundle(root: string, structure: Record<string, unknown>) {
 	for (const [filePath, content] of Object.entries(structure)) {

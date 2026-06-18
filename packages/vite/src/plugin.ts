@@ -1,6 +1,6 @@
 import type { Plugin } from "vite";
 import { resolve, relative } from "node:path";
-import { scanBundle } from "./scanner";
+import { scanBundle } from "@fanee/fs-scanner";
 
 export interface FaneePluginOptions {
 	/** Path to the OTB bundle directory. */

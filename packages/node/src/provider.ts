@@ -1,5 +1,5 @@
 import type { FaneeState } from "@fanee/core";
-import { scanBundle } from "./scanner";
+import { scanBundle } from "@fanee/fs-scanner";
 
 export function initFaneeNode(config: {
 	bundlePath: string;

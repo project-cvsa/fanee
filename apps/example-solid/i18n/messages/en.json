@@ -1,0 +1,6 @@
+{
+	"greeting": "Hello, {$name}!",
+	"site_title": "Fanee Demo",
+	"locale_label": "English",
+	"item_count": ".input {$count :number} .match $count one {{{$count} item}} * {{{$count} items}}"
+}
