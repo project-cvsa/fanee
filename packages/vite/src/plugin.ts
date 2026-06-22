@@ -28,7 +28,7 @@ export function fanee(options: FaneePluginOptions): Plugin {
 	return {
 		name: "fanee",
 		resolveId(source) {
-			if (source.startsWith(`virtual:fanee`)) {
+			if (source.startsWith(virtualId)) {
 				return source;
 			}
 			return null;
