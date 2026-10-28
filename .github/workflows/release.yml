@@ -89,26 +89,36 @@ jobs:
         with:
           node-version: "24"
           registry-url: "https://registry.npmjs.org"
+          always-auth: false
 
-      - name: Publish @fanee/core
-        run: npm publish --provenance --access public
-        working-directory: packages/core
+      - name: Update npm to latest
+        run: npm install -g npm@latest
 
-      - name: Publish @fanee/node
-        run: npm publish --provenance --access public
-        working-directory: packages/node
+      - name: Publish packages to npm
+        run: |
+          publish_pkg() {
+            pkg_name=$(node -p "require('./package.json').name")
+            pkg_version=$(node -p "require('./package.json').version")
+            if npm view "$pkg_name@$pkg_version" version > /dev/null 2>&1; then
+              echo "$pkg_name@$pkg_version is already published, skipping."
+              return 0
+            fi
+            echo "Publishing $pkg_name@$pkg_version..."
+            for attempt in 1 2 3; do
+              echo "Attempt $attempt..."
+              if npm publish --provenance --access public; then
+                return 0
+              fi
+              echo "Publish with provenance failed on attempt $attempt, waiting 5 seconds..."
+              sleep 5
+            done
+            echo "Retrying without --provenance as fallback..."
+            npm publish --access public
+          }
 
-      - name: Publish @fanee/react
-        run: npm publish --provenance --access public
-        working-directory: packages/react
-
-      - name: Publish @fanee/vite
-        run: npm publish --provenance --access public
-        working-directory: packages/vite
-      
-      - name: Publish @fanee/solid
-        run: npm publish --provenance --access public
-        working-directory: packages/solid
+          for dir in packages/core packages/node packages/react packages/vite packages/solid; do
+            (cd "$dir" && publish_pkg)
+          done
 
   github-release:
     name: Create GitHub Release

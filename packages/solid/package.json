@@ -3,12 +3,13 @@
 	"main": "dist/index.js",
 	"module": "dist/index.js",
 	"types": "dist/index.d.ts",
-	"version": "0.8.2",
+	"version": "0.8.3",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
 	"repository": {
-		"url": "https://github.com/project-cvsa/fanee"
+		"type": "git",
+		"url": "git+https://github.com/project-cvsa/fanee.git"
 	},
 	"scripts": {
 		"build": "bunx --bun tsdown",
