@@ -61,7 +61,11 @@ describe("fanee Vite integration", () => {
 			configFile: false,
 			logLevel: "silent",
 			plugins: [watcherReady, fanee({ bundlePath, virtualId })],
-			server: { host: "127.0.0.1", port: 0, watch: { ignoreInitial: false } },
+			server: {
+				host: "127.0.0.1",
+				port: 0,
+				watch: { ignoreInitial: false, usePolling: true, interval: 50 },
+			},
 			optimizeDeps: { noDiscovery: true, include: [] },
 		});
 		await server.listen();
@@ -123,7 +127,7 @@ describe("fanee Vite integration", () => {
 		await reload;
 		const module = await vite.transformRequest("virtual:fanee");
 		expect(module?.code).toContain('"greeting":"Updated"');
-	});
+	}, 15000);
 
 	test("updates an SSR-only import before the next render", async () => {
 		const vite = await start();
@@ -154,7 +158,7 @@ describe("fanee Vite integration", () => {
 		await rm(join(root, "bundle/messages/fr.json"));
 		await reload;
 		expect((await readServerResources(vite))[""]?.fr).toBeUndefined();
-	});
+	}, 15000);
 
 	test("loads an exact nested namespace through a custom virtual ID", async () => {
 		await write("bundle/modules/shop/manifest.json", { format: "otb", specVersion: "0.4.0" });
@@ -174,5 +178,5 @@ describe("fanee Vite integration", () => {
 		await write("bundle/messages/en.json", { greeting: "Outside root" });
 		await reload;
 		expect((await vite.transformRequest("virtual:fanee"))?.code).toContain("Outside root");
-	});
+	}, 15000);
 });
