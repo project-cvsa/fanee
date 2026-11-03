@@ -116,7 +116,7 @@ jobs:
             npm publish --access public
           }
 
-          for dir in packages/core packages/node packages/react packages/vite packages/solid; do
+          for dir in packages/core packages/node packages/react packages/vite packages/solid packages/tools; do
             (cd "$dir" && publish_pkg)
           done
 

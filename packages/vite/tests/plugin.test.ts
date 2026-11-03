@@ -1,179 +1,178 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, realpath, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-import { describe, test, expect, beforeEach, afterEach } from "bun:test";
-import type { HmrContext, ModuleNode, ResolvedConfig, ViteDevServer } from "vite";
+import { dirname, join } from "node:path";
+import { afterEach, beforeEach, describe, expect, test } from "bun:test";
+import {
+	createServer,
+	isRunnableDevEnvironment,
+	type HMRPayload,
+	type Plugin,
+	type ViteDevServer,
+} from "vite";
+import type { BundleResources } from "@fanee/core";
 import { fanee } from "@/index";
 
-async function createBundle(root: string, structure: Record<string, unknown>) {
-	for (const [filePath, content] of Object.entries(structure)) {
-		const fullPath = join(root, filePath);
-		const dir = join(fullPath, "..");
-		await Bun.$`mkdir -p ${dir}`;
-		if (typeof content === "string") {
-			await writeFile(fullPath, content);
-		} else {
-			await writeFile(fullPath, JSON.stringify(content, null, 2));
-		}
-	}
-}
-
-type ResolveIdHook = (
-	this: unknown,
-	source: string,
-	importer: string | undefined,
-	options: { isEntry: boolean }
-) => Promise<string | null | undefined>;
-type LoadHook = (this: unknown, id: string) => Promise<string | null | undefined>;
-
-describe("fanee vite plugin", () => {
-	let tempDir: string;
+describe("fanee Vite integration", () => {
+	let root: string;
+	let server: ViteDevServer | undefined;
+	let socket: WebSocket | undefined;
 
 	beforeEach(async () => {
-		tempDir = await mkdtemp(join(tmpdir(), "fanee-plugin-test-"));
+		root = await realpath(await mkdtemp(join(tmpdir(), "fanee-vite-")));
+		await write("bundle/manifest.json", { format: "otb", specVersion: "0.4.0" });
+		await write("bundle/messages/en.json", { greeting: "Hello" });
+		await write("entry.js", 'export { resources } from "virtual:fanee";');
 	});
 
 	afterEach(async () => {
-		await rm(tempDir, { recursive: true, force: true });
+		socket?.close();
+		await server?.close();
+		server = undefined;
+		socket = undefined;
+		await rm(root, { recursive: true, force: true });
 	});
 
-	test("resolves the default virtual module id", async () => {
-		const plugin = fanee({ bundlePath: tempDir });
-		const resolved = await (plugin.resolveId as ResolveIdHook).call(
-			undefined,
-			"virtual:fanee",
-			undefined,
-			{ isEntry: false }
-		);
-		expect(resolved).toBe("virtual:fanee");
-	});
+	async function write(file: string, value: string | object) {
+		const target = join(root, file);
+		await mkdir(dirname(target), { recursive: true });
+		await writeFile(target, typeof value === "string" ? value : JSON.stringify(value));
+	}
 
-	test("loads merged resources as a JS module", async () => {
-		await createBundle(tempDir, {
-			"manifest.json": { format: "otb", specVersion: "0.4.0" },
-			"messages/en.json": { greeting: "Hello" },
-			"modules/web/manifest.json": { format: "otb", specVersion: "0.4.0" },
-			"modules/web/messages/en.json": { webKey: "web" },
-		});
-
-		const plugin = fanee({ bundlePath: tempDir });
-		const source = await (plugin.load as LoadHook).call(undefined, "virtual:fanee");
-		expect(typeof source).toBe("string");
-		expect(source).toContain('"greeting":"Hello"');
-		expect(source).toContain('"webKey":"web"');
-	});
-
-	test("supports custom virtual module id", async () => {
-		await createBundle(tempDir, {
-			"manifest.json": { format: "otb", specVersion: "0.4.0" },
-			"messages/en.json": {},
-		});
-
-		const plugin = fanee({ bundlePath: tempDir, virtualId: "virtual:translations" });
-		const resolved = await (plugin.resolveId as ResolveIdHook).call(
-			undefined,
-			"virtual:translations",
-			undefined,
-			{ isEntry: false }
-		);
-		expect(resolved).toBe("virtual:translations");
-	});
-
-	test("adds bundle directory to watcher in configureServer", () => {
-		const plugin = fanee({ bundlePath: tempDir });
-		const watched: string[] = [];
-		const fakeServer = {
-			watcher: {
-				add(path: string) {
-					watched.push(path);
-				},
+	async function start(virtualId = "virtual:fanee", bundlePath = "./bundle", projectRoot = root) {
+		let ready: Promise<void> = Promise.resolve();
+		const watcherReady: Plugin = {
+			name: "test-watcher-ready",
+			configureServer(vite) {
+				const resourceFile = join(root, "bundle/messages/en.json");
+				ready = new Promise((resolve) => {
+					const added = (file: string) => {
+						if (file !== resourceFile) return;
+						vite.watcher.off("add", added);
+						resolve();
+					};
+					vite.watcher.on("add", added);
+					if (vite.watcher.getWatched()[dirname(resourceFile)]?.includes("en.json"))
+						added(resourceFile);
+				});
 			},
-		} as unknown as ViteDevServer;
-
-		if (typeof plugin.configureServer === "function") {
-			plugin.configureServer.call(undefined as never, fakeServer);
-		}
-		expect(watched).toContain(resolve(tempDir));
-	});
-
-	test("resolves relative bundlePath from config.root in configResolved", () => {
-		const plugin = fanee({ bundlePath: "./relative-bundle" });
-		const fakeConfig = {
-			root: "/test/project/root",
 		};
+		server = await createServer({
+			root: projectRoot,
+			configFile: false,
+			logLevel: "silent",
+			plugins: [watcherReady, fanee({ bundlePath, virtualId })],
+			server: { host: "127.0.0.1", port: 0, watch: { ignoreInitial: false } },
+			optimizeDeps: { noDiscovery: true, include: [] },
+		});
+		await server.listen();
+		await ready;
+		const address = server.httpServer?.address();
+		if (!address || typeof address === "string") throw new Error("Missing Vite address");
+		const connected = new Promise<void>((resolve, reject) => {
+			socket = new WebSocket(
+				`ws://127.0.0.1:${address.port}/?token=${server?.config.webSocketToken}`,
+				"vite-hmr"
+			);
+			socket.addEventListener("error", () => reject(new Error("Vite WebSocket failed")));
+			socket.addEventListener("message", () => resolve(), { once: true });
+		});
+		await connected;
+		return server;
+	}
 
-		if (typeof plugin.configResolved === "function") {
-			plugin.configResolved.call(undefined as never, fakeConfig as unknown as ResolvedConfig);
+	function nextReload(): Promise<void> {
+		return new Promise((resolve, reject) => {
+			if (!socket) return reject(new Error("Missing WebSocket"));
+			const client = socket;
+			const receive = (event: MessageEvent) => {
+				const payload: unknown = JSON.parse(String(event.data));
+				if (typeof payload !== "object" || payload === null || !("type" in payload)) return;
+				if (payload.type === "error") reject(new Error(JSON.stringify(payload)));
+				if (payload.type === "full-reload") {
+					client.removeEventListener("message", receive);
+					resolve();
+				}
+			};
+			client.addEventListener("message", receive);
+		});
+	}
+
+	async function readServerResources(vite: ViteDevServer): Promise<BundleResources> {
+		const environment = vite.environments.ssr;
+		if (!environment || !isRunnableDevEnvironment(environment)) {
+			throw new Error("Missing SSR runner");
 		}
+		const module = await environment.runner.import<{ resources: BundleResources }>(
+			join(root, "entry.js")
+		);
+		return module.resources;
+	}
 
-		const watched: string[] = [];
-		const fakeServer = {
-			watcher: {
-				add(path: string) {
-					watched.push(path);
-				},
-			},
-		} as unknown as ViteDevServer;
-
-		if (typeof plugin.configureServer === "function") {
-			plugin.configureServer.call(undefined as never, fakeServer);
-		}
-		expect(watched).toContain(resolve("/test/project/root", "./relative-bundle"));
+	test("loads resources through real client and SSR module pipelines", async () => {
+		const vite = await start();
+		const client = await vite.transformRequest("/entry.js");
+		expect(client?.code).toContain("virtual:fanee");
+		expect((await readServerResources(vite))[""]?.en?.greeting).toBe("Hello");
 	});
 
-	test("handles hot update: invalidates modules and sends full-reload", async () => {
-		const plugin = fanee({ bundlePath: tempDir });
-		const fakeModule: ModuleNode = {
-			id: "virtual:fanee",
-			url: "virtual:fanee",
-		} as unknown as ModuleNode;
+	test("reloads a CSR entry after an existing message changes", async () => {
+		const vite = await start();
+		await vite.transformRequest("/entry.js");
+		const reload = nextReload();
+		await write("bundle/messages/en.json", { greeting: "Updated" });
+		await reload;
+		const module = await vite.transformRequest("virtual:fanee");
+		expect(module?.code).toContain('"greeting":"Updated"');
+	});
 
-		let invalidated = false;
-		let reloaded = false;
+	test("updates an SSR-only import before the next render", async () => {
+		const vite = await start();
+		expect((await readServerResources(vite))[""]?.en?.greeting).toBe("Hello");
+		const environment = vite.environments.ssr;
+		if (!environment) throw new Error("Missing SSR environment");
+		const updated = new Promise<void>((resolve) => {
+			const send = environment.hot.send.bind(environment.hot);
+			environment.hot.send = (payload: HMRPayload) => {
+				send(payload);
+				if (payload.type === "full-reload") resolve();
+			};
+		});
+		await write("bundle/messages/en.json", { greeting: "Updated" });
+		await updated;
+		expect((await readServerResources(vite))[""]?.en?.greeting).toBe("Updated");
+	});
 
-		const fakeServer = {
-			moduleGraph: {
-				getModuleById(id: string) {
-					return id === "virtual:fanee" ? fakeModule : undefined;
-				},
-				idToModuleMap: new Map([["virtual:fanee", fakeModule]]),
-				invalidateModule(mod: ModuleNode) {
-					if (mod === fakeModule) invalidated = true;
-				},
-			},
-			ws: {
-				send(payload: { type: string; path: string }) {
-					if (payload.type === "full-reload") reloaded = true;
-				},
-			},
-		} as unknown as ViteDevServer;
+	test("adds and removes locale resources while the client entry stays loaded", async () => {
+		const vite = await start();
+		await vite.transformRequest("/entry.js");
+		let reload = nextReload();
+		await write("bundle/messages/fr.json", { greeting: "Bonjour" });
+		await reload;
+		expect((await readServerResources(vite))[""]?.fr?.greeting).toBe("Bonjour");
+		await vite.transformRequest("/entry.js");
+		reload = nextReload();
+		await rm(join(root, "bundle/messages/fr.json"));
+		await reload;
+		expect((await readServerResources(vite))[""]?.fr).toBeUndefined();
+	});
 
-		// 1. Unrelated file should do nothing
-		if (typeof plugin.handleHotUpdate === "function") {
-			const res = await plugin.handleHotUpdate.call(
-				undefined as never,
-				{
-					file: "/outside/unrelated.json",
-					server: fakeServer,
-				} as unknown as HmrContext
-			);
-			expect(res).toBeUndefined();
-			expect(invalidated).toBe(false);
-			expect(reloaded).toBe(false);
-		}
+	test("loads an exact nested namespace through a custom virtual ID", async () => {
+		await write("bundle/modules/shop/manifest.json", { format: "otb", specVersion: "0.4.0" });
+		await write("bundle/modules/shop/messages/en.json", { title: "Shop" });
+		await write("entry.js", 'export { resources } from "virtual:messages/shop";');
+		const vite = await start("virtual:messages");
+		expect(await readServerResources(vite)).toEqual({
+			shop: { en: { greeting: "Hello", title: "Shop" } },
+		});
+	});
 
-		// 2. File in bundlePath triggers invalidation and full reload
-		if (typeof plugin.handleHotUpdate === "function") {
-			const res = await plugin.handleHotUpdate.call(
-				undefined as never,
-				{
-					file: join(tempDir, "messages/en.json"),
-					server: fakeServer,
-				} as unknown as HmrContext
-			);
-			expect(res).toContain(fakeModule);
-			expect(invalidated).toBe(true);
-			expect(reloaded).toBe(true);
-		}
+	test("reloads resources located outside the Vite project root", async () => {
+		await write("app/entry.js", 'export { resources } from "virtual:fanee";');
+		const vite = await start("virtual:fanee", "../bundle", join(root, "app"));
+		await vite.transformRequest("/entry.js");
+		const reload = nextReload();
+		await write("bundle/messages/en.json", { greeting: "Outside root" });
+		await reload;
+		expect((await vite.transformRequest("virtual:fanee"))?.code).toContain("Outside root");
 	});
 });

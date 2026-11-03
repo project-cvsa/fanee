@@ -13,7 +13,10 @@ import { useFaneeContext } from "./provider";
  * <p>Current locale: {locale()}</p>
  * ```
  */
-export function useFanee(): { runtime: ReturnType<typeof useFaneeContext>["runtime"]; locale: Accessor<Locale> } {
+export function useFanee(): {
+	runtime: ReturnType<typeof useFaneeContext>["runtime"];
+	locale: Accessor<Locale>;
+} {
 	const { runtime, locale } = useFaneeContext();
 	return { runtime, locale };
 }
@@ -34,7 +37,9 @@ export function useFanee(): { runtime: ReturnType<typeof useFaneeContext>["runti
  * return <p>{t("not_found")}</p>;
  * ```
  */
-export function useT(context?: Partial<TranslateContext> | (() => Partial<TranslateContext>)): TranslateFunction {
+export function useT(
+	context?: Partial<TranslateContext> | (() => Partial<TranslateContext>)
+): TranslateFunction {
 	const { runtime, version } = useFaneeContext();
 	const normalizeContext = typeof context === "function" ? context : () => context ?? {};
 

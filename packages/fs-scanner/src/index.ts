@@ -1,13 +1,28 @@
-import { readFile, readdir, stat, type FileHandle, open, mkdtemp } from "node:fs/promises";
-import path, { join, resolve } from "node:path";
-import type { BundleResources, LocaleMessages, Namespace, OTBManifest } from "@fanee/core";
-import AdmZip from 'adm-zip';
+import { open, mkdtemp, readFile, readdir, rm, stat, type FileHandle } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { rm } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import type { BundleResources, LocaleMessages, Namespace, OTBManifest } from "@fanee/core";
+import AdmZip from "adm-zip";
 
 export async function loadManifest(bundlePath: string): Promise<OTBManifest> {
-	const content = await readFile(join(bundlePath, "manifest.json"), "utf-8");
-	const manifest = JSON.parse(content) as OTBManifest;
+	const manifestPath = join(bundlePath, "manifest.json");
+	let content: string;
+	try {
+		content = await readFile(manifestPath, "utf-8");
+	} catch (error) {
+		throw new Error(
+			`[fanee] Failed to read manifest at '${manifestPath}': ${error instanceof Error ? error.message : String(error)}`
+		);
+	}
+
+	let manifest: OTBManifest;
+	try {
+		manifest = JSON.parse(content) as OTBManifest;
+	} catch (error) {
+		throw new Error(
+			`[fanee] Malformed JSON in manifest at '${manifestPath}': ${error instanceof Error ? error.message : String(error)}`
+		);
+	}
 
 	if (manifest.format !== "otb") {
 		throw new Error(`[fanee] Invalid bundle format: expected "otb", got "${manifest.format}"`);
@@ -38,7 +53,10 @@ export async function loadMessagesDir(
 	}
 }
 
-type ModuleInfo = { path: string; standalone: boolean };
+interface ModuleInfo {
+	path: string;
+	standalone: boolean;
+}
 
 async function collectModules(
 	modulesDir: string,
@@ -123,10 +141,10 @@ async function buildResources(
 	return resources;
 }
 
-export async function isZipArchive(path: string) {
+export async function isZipArchive(filePath: string): Promise<boolean> {
 	let fileHandle: FileHandle | null = null;
 	try {
-		fileHandle = await open(path, 'r');
+		fileHandle = await open(filePath, "r");
 		const buffer = Buffer.alloc(4);
 		await fileHandle.read(buffer, 0, 4, 0);
 		return buffer[0] === 0x50 && buffer[1] === 0x4b && buffer[2] === 0x03 && buffer[3] === 0x04;
@@ -139,15 +157,15 @@ export async function isZipArchive(path: string) {
 	}
 }
 
-export async function unarchiveZip(pathStr: string) {
-	const tmpDir = await mkdtemp(path.join(tmpdir(), `zip-${performance.now()}`));
-	const zip = new AdmZip(pathStr);
+export async function unarchiveZip(zipFilePath: string): Promise<string> {
+	const tmpDir = await mkdtemp(join(tmpdir(), `fanee-zip-${Date.now()}-`));
+	const zip = new AdmZip(zipFilePath);
 	zip.extractAllTo(tmpDir, true);
 	return tmpDir;
 }
 
 /**
- * Scan an OTB bundle directory and produce merged BundleResources.
+ * Scan an OTB bundle directory or zip archive and produce merged BundleResources.
  *
  * Implements the OTB Bundle-phase merge algorithm independently:
  * descendant modules override ancestor modules, and `standalone: true`
@@ -155,23 +173,28 @@ export async function unarchiveZip(pathStr: string) {
  */
 export async function scanBundle(bundlePath: string): Promise<BundleResources> {
 	const resolvedPath = resolve(bundlePath);
-	const isZip = await isZipArchive(bundlePath);
+	const isZip = await isZipArchive(resolvedPath);
+	let extractedTmpDir: string | null = null;
 
-	const finalPath = isZip ? await unarchiveZip(resolvedPath) : resolvedPath
+	try {
+		if (isZip) {
+			extractedTmpDir = await unarchiveZip(resolvedPath);
+		}
+		const workingPath = extractedTmpDir ?? resolvedPath;
 
-	await loadManifest(finalPath);
+		await loadManifest(workingPath);
 
-	const modules = new Map<Namespace, ModuleInfo>();
-	modules.set("", {
-		path: finalPath,
-		standalone: false,
-	});
+		const modules = new Map<Namespace, ModuleInfo>();
+		modules.set("", {
+			path: workingPath,
+			standalone: false,
+		});
 
-	await collectModules(join(finalPath, "modules"), "", modules);
-	const resources = await buildResources(finalPath, modules);
-	if (isZip) {
-		try { rm(finalPath, { recursive: true }); }
-		finally { }
+		await collectModules(join(workingPath, "modules"), "", modules);
+		return await buildResources(workingPath, modules);
+	} finally {
+		if (extractedTmpDir) {
+			await rm(extractedTmpDir, { recursive: true, force: true }).catch(() => {});
+		}
 	}
-	return resources;
 }

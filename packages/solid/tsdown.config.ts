@@ -1,5 +1,5 @@
 import { defineConfig } from "tsdown";
-import solid from 'unplugin-solid/rolldown';
+import solid from "unplugin-solid/rolldown";
 
 export default defineConfig({
 	entry: ["./src/index.ts"],
@@ -10,7 +10,7 @@ export default defineConfig({
 		tsconfig: "./tsconfig.build.json",
 		sourcemap: true,
 	},
-	platform: 'neutral',
+	platform: "neutral",
 	outputOptions: {
 		format: "esm",
 	},

@@ -45,5 +45,16 @@
 		"clientKind": "git",
 		"enabled": true,
 		"useIgnoreFile": true
+	},
+	"linter": {
+		"rules": {
+			"suspicious": {
+				"noExplicitAny": "error",
+				"noDeprecatedImports": "error"
+			},
+			"style": {
+				"useTemplate": "off"
+			}
+		}
 	}
 }

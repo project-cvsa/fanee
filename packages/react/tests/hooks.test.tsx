@@ -31,6 +31,18 @@ async function renderWithProvider(runtime: FaneeRuntime) {
 }
 
 describe("@fanee/react", () => {
+	test("renders replacement resources through the existing runtime subscription", async () => {
+		const runtime = new FaneeRuntime().config({
+			resources: { "": { en: { hello: "Before" } } },
+		});
+		const view = await renderWithProvider(runtime);
+		await act(async () => {
+			await runtime.config({ resources: { "": { en: { hello: "After" } } } }).ready();
+		});
+		expect(view.container.textContent).toContain("After");
+		expect(view.container.textContent).not.toContain("Before");
+		view.unmount();
+	});
 	test("translates keys using runtime resources", async () => {
 		const runtime = new FaneeRuntime().config({
 			defaultLocale: "en",

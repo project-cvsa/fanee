@@ -123,15 +123,9 @@ export class FaneeRuntime {
 			return key;
 		}
 
-		let localeData = resources[locale];
-		if (!localeData) {
-			localeData = resources[this.state.defaultLocale];
-			if (!localeData) {
-				return key;
-			}
-		}
-
-		const value = localeData[key];
+		const messageLocale =
+			resources[locale]?.[key] === undefined ? this.state.defaultLocale : locale;
+		const value = resources[messageLocale]?.[key];
 		if (value === undefined) {
 			return key;
 		}
@@ -141,7 +135,7 @@ export class FaneeRuntime {
 		}
 
 		return this.state.translate(value, {
-			locale,
+			locale: messageLocale,
 			vars,
 			formatting: this.state.formatting,
 		});

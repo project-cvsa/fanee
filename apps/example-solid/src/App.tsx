@@ -12,7 +12,11 @@ function RootSection() {
 			<h2>{t("greeting", { name: "Fanee" })}</h2>
 			<p class="sub">{t("item_count", { count: count() })}</p>
 			<div class="controls">
-				<button type="button" disabled={count() <= 0} onClick={() => setCount((c) => c - 1)}>
+				<button
+					type="button"
+					disabled={count() <= 0}
+					onClick={() => setCount((c) => c - 1)}
+				>
 					-
 				</button>
 				<button type="button" onClick={() => setCount((c) => c + 1)}>

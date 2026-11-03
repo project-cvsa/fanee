@@ -9,7 +9,7 @@
 			"types": "./dist/client.d.ts"
 		}
 	},
-	"version": "0.8.3",
+	"version": "0.9.0",
 	"type": "module",
 	"private": false,
 	"license": "MIT",
@@ -33,11 +33,11 @@
 		"@rolldown/pluginutils": "^1.0.1"
 	},
 	"devDependencies": {
+		"@fanee/fs-scanner": "workspace:*",
 		"@types/bun": "latest",
 		"@types/node": "^22.0.0",
 		"tsdown": "^0.22.2",
-		"vite": "^8.0.12",
-		"@fanee/fs-scanner": "workspace:*"
+		"vite": "^8.3.0"
 	},
 	"files": [
 		"dist/"

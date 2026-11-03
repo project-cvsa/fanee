@@ -1,5 +1,12 @@
-import { createContext, useContext, createSignal, onCleanup, type JSX, type Accessor } from "solid-js";
-import h from "solid-js/h";
+import {
+	createComponent,
+	createContext,
+	useContext,
+	createSignal,
+	onCleanup,
+	type JSX,
+	type Accessor,
+} from "solid-js";
 import { i18n, type FaneeRuntime, type Locale } from "@fanee/core";
 
 interface FaneeContextValue {
@@ -29,7 +36,7 @@ export interface FaneeProviderProps {
  * </FaneeProvider>
  * ```
  */
-export function FaneeProvider(props: FaneeProviderProps) {
+export function FaneeProvider(props: FaneeProviderProps): JSX.Element {
 	const [locale, setLocale] = createSignal<Locale>(props.runtime.getLocale());
 	const [version, setVersion] = createSignal<number>(props.runtime.getVersion());
 
@@ -45,7 +52,7 @@ export function FaneeProvider(props: FaneeProviderProps) {
 		version,
 	};
 
-	return h(FaneeContext.Provider, {
+	return createComponent(FaneeContext.Provider, {
 		value,
 		get children() {
 			return props.children;

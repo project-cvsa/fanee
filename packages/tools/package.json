@@ -1,0 +1,41 @@
+{
+	"name": "@fanee/tools",
+	"version": "0.9.0",
+	"type": "module",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"default": "./dist/index.js"
+		}
+	},
+	"bin": {
+		"fanee": "./dist/cli.js"
+	},
+	"files": [
+		"dist/"
+	],
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/project-cvsa/fanee.git"
+	},
+	"scripts": {
+		"build": "bunx --bun tsdown",
+		"test": "bun test",
+		"typecheck": "bunx --bun tsgo --noEmit",
+		"lint": "bunx --bun biome lint"
+	},
+	"dependencies": {
+		"@fanee/core": "workspace:*",
+		"messageformat": "^4.0.0",
+		"tinyglobby": "^0.2.17",
+		"typescript": "^6.0.3",
+		"zod": "^4.3.6"
+	},
+	"devDependencies": {
+		"@fanee/fs-scanner": "workspace:*",
+		"@types/bun": "latest",
+		"@types/node": "^22.0.0",
+		"tsdown": "^0.22.2"
+	}
+}

@@ -51,7 +51,6 @@ export function useT(context?: Partial<TranslateContext>): TranslateFunction {
 	const locale = context?.locale;
 	const namespace = context?.namespace;
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: version forces update on resource changes
 	return useCallback(
 		(key: MessageKey, vars?: Record<string, unknown>) => {
 			const result = runtime.getT({ locale, namespace })(key, vars);
