@@ -37,5 +37,9 @@
 		"@types/bun": "latest",
 		"@types/node": "^22.0.0",
 		"tsdown": "^0.22.2"
+	},
+	"private": false,
+	"publishConfig": {
+		"access": "public"
 	}
 }
