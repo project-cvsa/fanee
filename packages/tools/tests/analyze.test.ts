@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { analyze, generateTypes, type ToolsConfig } from "@/index";
+import { analyze, generateTypes, type ToolsConfig } from "../src/index";
 
 describe("translation source analysis", () => {
 	let root: string;

@@ -1,5 +1,9 @@
 {
 	"extends": "../node/tsconfig.json",
-	"compilerOptions": { "paths": { "@/*": ["./src/*"] } },
+	"compilerOptions": {
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
 	"include": ["src", "tests", "tsdown.config.ts"]
 }
